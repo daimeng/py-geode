@@ -1,0 +1,15 @@
+# lib
+aiohttp
+numpy
+
+# server
+starlette
+uvicorn
+graphene
+uvloop
+ujson
+
+# testing
+prettyprinter
+mypy
+pylint
