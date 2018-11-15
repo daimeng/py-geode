@@ -51,8 +51,8 @@ class Client(m.dist.Client, m.geoc.Client):
         return await asyncio.gather(*[self.geocode(loc, session=session) for loc in locations])
 
     # TODO: allow feeding addresses directly into distance_matrix?
-    # @m.dist.Partition(area=625, factors=380)
-    # @m.dist.Dedupe
+    @m.dist.partition(area_max=625, factor_max=380)
+    @m.dist.dedupe
     async def distance_matrix(self, origins: Iterable[m.GeoPoint], destinations: Iterable[m.GeoPoint], session=None) -> m.dist.Result:
         res = await self.request(
             self.distance_matrix_path,

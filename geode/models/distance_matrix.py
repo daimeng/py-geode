@@ -1,7 +1,8 @@
 import abc
+import asyncio
 import numpy as np # type: ignore
-from dataclasses import dataclass
 from functools import partial
+from dataclasses import dataclass
 from typing import Sequence, Iterable, Optional, NamedTuple, Iterator
 
 from geode.models.common import GeoPoint
@@ -31,7 +32,7 @@ class Dedupe(object):
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
-    async def __call__(self, origins: Iterable[GeoPoint], destinations: Iterable[GeoPoint], *args, **kwargs) -> distance_matrix.Result:
+    async def __call__(self, self_arg, origins: Iterable[GeoPoint], destinations: Iterable[GeoPoint], *args, **kwargs) -> distance_matrix.Result:
         # make non-numpy version
         origs, omap = np.unique(origins, axis=0, return_inverse=True)
         dests, dmap = np.unique(destinations, axis=0, return_inverse=True)
@@ -41,27 +42,53 @@ class Dedupe(object):
         dmap = dmap.reshape(-1, dmap.size)
 
         # retrieve distances
-        deduped_res = await self.fn(origs, dests, *args, **kwargs)
+        deduped_res = await self.fn(self_arg, origs, dests, *args, **kwargs)
 
         # apply inverses and de-unique
         return distance_matrix.Result(
             distances=[ deduped_res.distances[idx] for idx in (omap * np.size(dests, 0) + dmap).flat ]
         )
 
+def dedupe(fn):
+    return Dedupe(fn)
+
 
 class Partition(object):
-    def __init__(self, fn):
+    def __init__(self, area_max, factor_max, fn):
+        self.area_max = area_max
+        self.factor_max = factor_max
         self.fn = fn
     
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
-    async def __call__(self, *args, **kwargs):
-        origins = kwargs.pop('origins')
-        destinations = kwargs.pop('destinations')
+    async def __call__(self, self_arg, origins: Iterable[GeoPoint], destinations: Iterable[GeoPoint], *args, **kwargs):
+        origins = list(origins)
+        destinations = list(destinations)
 
-        return await self.fn(*args, origins=origins, destinations=destinations, **kwargs)
+        olen = len(origins)
+        dlen = len(destinations)
+        chunks = list(partition_matrix(dlen, olen, self.area_max, self.factor_max))
+        results = np.empty((olen, dlen), dtype=np.object)
 
+        subresults = await asyncio.gather(*[
+            self.fn(self_arg, origins=origins[y:y2+1], destinations=destinations[x:x2+1], *args, **kwargs)
+            for x, y, x2, y2 in chunks])
+
+        for subres, chunk in zip(subresults, chunks):
+            x, y, x2, y2 = chunk
+            xs = x2 - x + 1
+            ys = y2 - y + 1
+            if subres.distances:
+                results[y:ys, x:xs] = np.resize(np.array(subres.distances), (ys, xs))
+
+        return distance_matrix.Result(distances=results.flatten().tolist())
+
+
+def partition(area_max, factor_max):
+    def _inner(fn):
+        return Partition(area_max, factor_max, fn)
+    return _inner
 
 class MatrixIterBlock(NamedTuple):
     x: int

@@ -38,7 +38,8 @@ async def main():
                 ],
                 destinations=[
                     m.GeoPoint(lon=-94.5823, lat=34.1368),
-                    m.GeoPoint(lon=-96.0384, lat=36.3408)
+                    m.GeoPoint(lon=-96.0384, lat=36.3408),
+                    m.GeoPoint(lon=-92.0286, lat=32.2834)
                 ],
                 session=session)
 
