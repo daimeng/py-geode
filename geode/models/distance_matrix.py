@@ -3,7 +3,7 @@ import asyncio
 import numpy as np # type: ignore
 from functools import partial
 from dataclasses import dataclass
-from typing import Sequence, Iterable, Optional, NamedTuple, Iterator
+from typing import Sequence, List, Optional, NamedTuple, Iterator
 
 from geode.models.common import GeoPoint
 from geode.models import distance_matrix
@@ -21,7 +21,7 @@ class Result:
 
 
 class Client(abc.ABC):
-    async def distance_matrix(self, origins: Iterable[GeoPoint], destinations: Iterable[GeoPoint]) -> Result:
+    async def distance_matrix(self, origins: List[GeoPoint], destinations: List[GeoPoint]) -> Result:
         pass
 
 
@@ -32,7 +32,7 @@ class Dedupe(object):
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
-    async def __call__(self, self_arg, origins: Iterable[GeoPoint], destinations: Iterable[GeoPoint], *args, **kwargs) -> distance_matrix.Result:
+    async def __call__(self, self_arg, origins: List[GeoPoint], destinations: List[GeoPoint], *args, **kwargs) -> distance_matrix.Result:
         # make non-numpy version
         origs, omap = np.unique(origins, axis=0, return_inverse=True)
         dests, dmap = np.unique(destinations, axis=0, return_inverse=True)
@@ -62,7 +62,7 @@ class Partition(object):
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
-    async def __call__(self, self_arg, origins: Iterable[GeoPoint], destinations: Iterable[GeoPoint], *args, **kwargs):
+    async def __call__(self, self_arg, origins: List[GeoPoint], destinations: List[GeoPoint], *args, **kwargs):
         origins = list(origins)
         destinations = list(destinations)
 

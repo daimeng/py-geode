@@ -2,7 +2,7 @@ import asyncio
 import functools
 import datetime
 import json
-from typing import Iterable, Union, Sequence, Optional
+from typing import List, Union, Sequence, Optional
 
 import geode.models as m
 from geode.utils import marshall_to
@@ -47,13 +47,13 @@ class Client(m.dist.Client, m.geoc.Client):
         data = marshall_to(GoogleGeocodingResponse, await res.json())
         return next(map(map_from_address, data.results), None)
 
-    async def batch_geocode(self, locations: Iterable[m.Location], session=None) -> Sequence[Optional[m.geoc.Result]]:
+    async def batch_geocode(self, locations: List[m.Location], session=None) -> Sequence[Optional[m.geoc.Result]]:
         return await asyncio.gather(*[self.geocode(loc, session=session) for loc in locations])
 
     # TODO: allow feeding addresses directly into distance_matrix?
     @m.dist.partition(area_max=625, factor_max=380)
     @m.dist.dedupe
-    async def distance_matrix(self, origins: Iterable[m.GeoPoint], destinations: Iterable[m.GeoPoint], session=None) -> m.dist.Result:
+    async def distance_matrix(self, origins: List[m.GeoPoint], destinations: List[m.GeoPoint], session=None) -> m.dist.Result:
         res = await self.request(
             self.distance_matrix_path,
             dict(

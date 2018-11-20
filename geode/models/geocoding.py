@@ -1,7 +1,7 @@
 import abc
 import enum
 from dataclasses import dataclass
-from typing import Optional, Iterable, Sequence
+from typing import Optional, List, Sequence
 
 from geode.models.common import Location, Address, GeoPoint
 
@@ -25,4 +25,4 @@ class Client(abc.ABC):
     async def geocode(self, location: Location) -> Optional[Result]: pass
 
     @abc.abstractmethod
-    async def batch_geocode(self, locations: Iterable[Location]) -> Sequence[Optional[Result]]: pass
+    async def batch_geocode(self, locations: List[Location]) -> Sequence[Optional[Result]]: pass
