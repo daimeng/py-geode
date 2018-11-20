@@ -1,6 +1,8 @@
 # lib
 aiohttp
+pandas
 numpy
+scipy
 
 # server
 starlette
