@@ -32,7 +32,7 @@ class Dedupe(object):
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
-    async def __call__(self, self_arg, origins: List[GeoPoint], destinations: List[GeoPoint], *args, **kwargs) -> distance_matrix.Result:
+    async def __call__(self, instance, origins: List[GeoPoint], destinations: List[GeoPoint], *args, **kwargs) -> distance_matrix.Result:
         # make non-numpy version
         origs, omap = np.unique(origins, axis=0, return_inverse=True)
         dests, dmap = np.unique(destinations, axis=0, return_inverse=True)
@@ -42,7 +42,7 @@ class Dedupe(object):
         dmap = dmap.reshape(-1, dmap.size)
 
         # retrieve distances
-        deduped_res = await self.fn(self_arg, origs, dests, *args, **kwargs)
+        deduped_res = await self.fn(instance, origs, dests, *args, **kwargs)
 
         # apply inverses and de-unique
         return distance_matrix.Result(
@@ -62,7 +62,7 @@ class Partition(object):
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
-    async def __call__(self, self_arg, origins: List[GeoPoint], destinations: List[GeoPoint], *args, **kwargs):
+    async def __call__(self, instance, origins: List[GeoPoint], destinations: List[GeoPoint], *args, **kwargs):
         origins = list(origins)
         destinations = list(destinations)
 
@@ -72,7 +72,7 @@ class Partition(object):
         results = np.empty((olen, dlen), dtype=np.object)
 
         subresults = await asyncio.gather(*[
-            self.fn(self_arg, origins=origins[y:y2+1], destinations=destinations[x:x2+1], *args, **kwargs)
+            self.fn(instance, origins=origins[y:y2+1], destinations=destinations[x:x2+1], *args, **kwargs)
             for x, y, x2, y2 in chunks])
 
         for subres, chunk in zip(subresults, chunks):
