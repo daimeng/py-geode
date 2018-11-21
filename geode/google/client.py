@@ -5,7 +5,7 @@ import json
 from typing import List, Union, Sequence, Optional
 
 import geode.models as m
-from geode.utils import marshall_to
+from geode.utils import marshall_to, point_to_str
 
 from .geocoding import map_from_address
 from .distance_matrix import map_from_distance_matrix_response
@@ -24,9 +24,6 @@ class Client(m.dist.Client, m.geoc.Client):
         self.key = key
         self.session = session
 
-    def to_point_str(self, point: m.GeoPoint):
-        return f'{point[0]:.4},{point[1]:.4}'
-
     async def request(self, path, params, session=None):
         print(f'sent request at {(datetime.datetime.now())}')
 
@@ -42,7 +39,7 @@ class Client(m.dist.Client, m.geoc.Client):
         if isinstance(location, str):
             res = await self.request(self.geocoding_path, dict(address=location), session=session)
         else:
-            res = await self.request(self.geocoding_path, dict(address=self.to_point_str(location)), session=session)
+            res = await self.request(self.geocoding_path, dict(address=point_to_str(location)), session=session)
 
         data = marshall_to(GoogleGeocodingResponse, await res.json())
         return next(map(map_from_address, data.results), None)
@@ -57,8 +54,8 @@ class Client(m.dist.Client, m.geoc.Client):
         res = await self.request(
             self.distance_matrix_path,
             dict(
-                origins=self.distance_matrix_separator.join(map(self.to_point_str, origins)),
-                destinations=self.distance_matrix_separator.join(map(self.to_point_str, destinations))
+                origins=self.distance_matrix_separator.join(map(point_to_str, origins)),
+                destinations=self.distance_matrix_separator.join(map(point_to_str, destinations))
             ),
             session=session
         )

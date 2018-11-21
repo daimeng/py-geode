@@ -2,6 +2,11 @@ import dataclasses
 import enum
 from typing import Any, Dict, Optional, Union
 
+import geode.models as m
+
+def point_to_str(point: m.GeoPoint, precision=4):
+    return f'{point[0]:.{precision}},{point[1]:.{precision}}'
+
 
 class UnionParseException(Exception):
     def __init__(self, wrapped: Exception = None):
