@@ -22,13 +22,22 @@ async def main():
     origins_file = sys.argv[1]
     destinations_file = sys.argv[2]
 
-    origf = pd.read_csv(origins_file)
-    destf = pd.read_csv(destinations_file)
+    origf = pd.read_csv(origins_file)[['lat', 'lon']].round(4).drop_duplicates()
+    destf = pd.read_csv(destinations_file)[['lat', 'lon']].round(4).drop_duplicates()
+
+    appendf = None
+    append_file = None
+    if len(sys.argv) >= 4:
+        append_file = sys.argv[3]
+
+        appendf = pd.read_csv(append_file)
+        appendf = appendf[appendf.source == 'google'].drop_duplicates()
+        appendf.set_index(pd.MultiIndex.from_arrays([appendf.olat, appendf.olon, appendf.dlat, appendf.dlon]), inplace=True)
 
     res = None
 
-    origs = origf[['lat', 'lon']].values
-    dests = destf[['lat', 'lon']].values
+    origs = origf.to_records(index=False)
+    dests = destf.to_records(index=False)
 
     hdists = distance.cdist(
         origs,
@@ -48,8 +57,11 @@ async def main():
     async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
         res = await asyncio.gather(*[
             client.distance_matrix(
-                origins=[m.GeoPoint(lat=orig[0], lon=orig[1])],
-                destinations=[m.GeoPoint(lat=d[0], lon=d[1]) for d in dests[hdists[i] < MAX_METERS]],
+                origins=orig,
+                destinations=[
+                    d
+                    for d in dests[hdists[i] < MAX_METERS]
+                    if appendf is None or (orig[0], orig[1], d[0], d[1]) not in appendf.index],
                 session=session
             ) for i, orig in enumerate(origs)
         ])
@@ -71,7 +83,12 @@ async def main():
                     results[i][x] = ('%.4f' % orig[0], '%.4f' % orig[1], '%.4f' % dests[x][0], '%.4f' % dests[x][1], '%.0f' % entry.meters, 'google')
 
     df = pd.DataFrame(results.flatten().tolist(), columns=['olat', 'olon', 'dlat', 'dlon', 'dist', 'source'])
-    df.to_csv('test.csv', index=False, chunksize=1000)
+    df = df[df.source == 'google']
+
+    if append_file:
+        df.to_csv(append_file, mode='a', index=False, header=False, chunksize=1000)
+    else:
+        df.to_csv('test.csv', index=False, chunksize=1000)
 
 if __name__ == '__main__':
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())

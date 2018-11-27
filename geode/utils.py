@@ -1,11 +1,15 @@
 import dataclasses
 import enum
+import numpy as np # type: ignore
 from typing import Any, Dict, Optional, Union
 
 import geode.models as m
 
-def point_to_str(point: m.GeoPoint, precision=4):
-    return f'{point[0]:.{precision}},{point[1]:.{precision}}'
+def point_to_str(point: np.ndarray, precision=4):
+    if point.dtype.names:
+        return f"""{point['lat']:.{precision}f},{point['lon']:.{precision}f}"""
+
+    return f"""{point[0]:.{precision}f},{point[1]:.{precision}f}"""
 
 
 class UnionParseException(Exception):
@@ -37,7 +41,7 @@ def marshall_to(cls: Any, data: Optional[Any]):
             for t in types:
                 try:
                     return marshall_to(t, data)
-                except Exception as err:
+                except Exception as err: 
                     last_err = UnionParseException(err)
 
             raise last_err

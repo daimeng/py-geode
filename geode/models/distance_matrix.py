@@ -9,19 +9,15 @@ from geode.models.common import GeoPoint
 from geode.models import distance_matrix
 
 
-@dataclass
-class Entry:
-    meters: int
-    seconds: int
-
+RECORD = [('meters', float), ('seconds', float)]
 
 @dataclass
 class Result:
-    distances: Sequence[Optional[Entry]]
+    distances: np.ndarray
 
 
 class Client(abc.ABC):
-    async def distance_matrix(self, origins: List[GeoPoint], destinations: List[GeoPoint]) -> Result:
+    async def distance_matrix(self, origins: np.ndarray, destinations: np.ndarray) -> Result:
         pass
 
 
@@ -32,7 +28,15 @@ class Dedupe(object):
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
-    async def __call__(self, instance, origins: List[GeoPoint], destinations: List[GeoPoint], *args, **kwargs) -> distance_matrix.Result:
+    async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, dedupe = True, **kwargs) -> distance_matrix.Result:
+        if not origins or not destinations:
+            return distance_matrix.Result(
+                distances=None
+            )
+
+        if not dedupe:
+            return await self.fn(instance, origins, destinations, *args, **kwargs)
+
         # make non-numpy version
         origs, omap = np.unique(origins, axis=0, return_inverse=True)
         dests, dmap = np.unique(destinations, axis=0, return_inverse=True)
@@ -54,7 +58,7 @@ def dedupe(fn):
 
 
 class Partition(object):
-    def __init__(self, area_max, factor_max, fn):
+    def __init__(self, area_max: int, factor_max: int, fn):
         self.area_max = area_max
         self.factor_max = factor_max
         self.fn = fn
@@ -62,14 +66,15 @@ class Partition(object):
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
-    async def __call__(self, instance, origins: List[GeoPoint], destinations: List[GeoPoint], *args, **kwargs):
-        origins = list(origins)
-        destinations = list(destinations)
-
+    async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, area_max: int = None, factor_max: int = None, **kwargs):
         olen = len(origins)
         dlen = len(destinations)
-        chunks = list(partition_matrix(dlen, olen, self.area_max, self.factor_max))
-        results = np.empty((olen, dlen), dtype=np.object)
+        results = np.recarray((olen, dlen), dtype=distance_matrix.RECORD)
+
+        area_max = area_max or self.area_max
+        factor_max = factor_max or self.factor_max
+
+        chunks = list(partition_matrix(dlen, olen, area_max, factor_max))
 
         subresults = await asyncio.gather(*[
             self.fn(instance, origins=origins[y:y2+1], destinations=destinations[x:x2+1], *args, **kwargs)
@@ -79,10 +84,10 @@ class Partition(object):
             x, y, x2, y2 = chunk
             xs = x2 - x + 1
             ys = y2 - y + 1
-            if subres.distances:
-                results[y:ys, x:xs] = np.resize(np.array(subres.distances), (ys, xs))
 
-        return distance_matrix.Result(distances=results.flatten().tolist())
+            results[y:ys, x:xs] = subres.distances
+
+        return distance_matrix.Result(distances=results)
 
 
 def partition(area_max, factor_max):
@@ -122,5 +127,3 @@ def partition_matrix(xlen: int, ylen: int, area_max: int, factor_max: int) -> It
             # partition fits
             else:
                 yield MatrixIterBlock(x, y, x2, y2)
-
-

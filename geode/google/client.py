@@ -2,6 +2,7 @@ import asyncio
 import functools
 import datetime
 import json
+import numpy as np # type: ignore
 from typing import List, Union, Sequence, Optional
 
 import geode.models as m
@@ -15,7 +16,7 @@ class Client(m.dist.Client, m.geoc.Client):
     base_url = 'https://maps.googleapis.com/'
     geocoding_path = 'maps/api/geocode/json'
     distance_matrix_path = 'maps/api/distancematrix/json'
-    distance_matrix_separator = '|'
+    point_sep = '|'
     key = ''
     # client_id: str
     # secret: str
@@ -49,16 +50,15 @@ class Client(m.dist.Client, m.geoc.Client):
 
     # TODO: allow feeding addresses directly into distance_matrix?
     @m.dist.partition(area_max=625, factor_max=380)
-    @m.dist.dedupe
-    async def distance_matrix(self, origins: List[m.GeoPoint], destinations: List[m.GeoPoint], session=None) -> m.dist.Result:
+    async def distance_matrix(self, origins: np.ndarray, destinations: np.ndarray, session=None) -> m.dist.Result:
         res = await self.request(
             self.distance_matrix_path,
             dict(
-                origins=self.distance_matrix_separator.join(map(point_to_str, origins)),
-                destinations=self.distance_matrix_separator.join(map(point_to_str, destinations))
+                origins=self.point_sep.join(map(point_to_str, origins)),
+                destinations=self.point_sep.join(map(point_to_str, destinations))
             ),
-            session=session
-        )
+            session=session)
+
         data = marshall_to(GoogleDistanceMatrixResponse, await res.json())
 
         return map_from_distance_matrix_response(data)

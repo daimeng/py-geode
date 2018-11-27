@@ -12,6 +12,7 @@ uvloop
 ujson
 
 # testing
+pytest
 prettyprinter
 mypy
 pylint
