@@ -34,12 +34,14 @@ async def main():
         else:
             res = await client.distance_matrix(
                 origins=np.array([
+                    (37.1165, -92.2353),
                     (34.1368, -94.5823),
                     (37.1165, -92.2353)
                 ]),
                 destinations=np.array([
                     (-94.5823, 34.1368),
                     (-96.0384, 36.3408),
+                    (-92.0286, 32.2834),
                     (-92.0286, 32.2834)
                 ], dtype=[('lon', float), ('lat', float)]),
                 session=session)

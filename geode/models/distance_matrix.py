@@ -29,10 +29,8 @@ class Dedupe(object):
         return partial(self.__call__, instance)
 
     async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, dedupe = True, **kwargs) -> distance_matrix.Result:
-        if not origins or not destinations:
-            return distance_matrix.Result(
-                distances=None
-            )
+        if len(origins) == 0 or len(destinations) == 0:
+            return distance_matrix.Result(distances=None)
 
         if not dedupe:
             return await self.fn(instance, origins, destinations, *args, **kwargs)
@@ -47,10 +45,11 @@ class Dedupe(object):
 
         # retrieve distances
         deduped_res = await self.fn(instance, origs, dests, *args, **kwargs)
+        dists = deduped_res.distances.ravel()
 
         # apply inverses and de-unique
         return distance_matrix.Result(
-            distances=[ deduped_res.distances[idx] for idx in (omap * np.size(dests, 0) + dmap).flat ]
+            distances=dists.take(omap * np.size(dests, 0) + dmap)
         )
 
 def dedupe(fn):

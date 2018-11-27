@@ -50,6 +50,7 @@ class Client(m.dist.Client, m.geoc.Client):
 
     # TODO: allow feeding addresses directly into distance_matrix?
     @m.dist.partition(area_max=625, factor_max=380)
+    @m.dist.dedupe
     async def distance_matrix(self, origins: np.ndarray, destinations: np.ndarray, session=None) -> m.dist.Result:
         res = await self.request(
             self.distance_matrix_path,
