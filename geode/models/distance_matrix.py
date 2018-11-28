@@ -35,7 +35,6 @@ class Dedupe(object):
         if not dedupe:
             return await self.fn(instance, origins, destinations, *args, **kwargs)
 
-        # make non-numpy version
         origs, omap = np.unique(origins, axis=0, return_inverse=True)
         dests, dmap = np.unique(destinations, axis=0, return_inverse=True)
 
@@ -57,9 +56,7 @@ def dedupe(fn):
 
 
 class Partition(object):
-    def __init__(self, area_max: int, factor_max: int, fn):
-        self.area_max = area_max
-        self.factor_max = factor_max
+    def __init__(self, fn):
         self.fn = fn
     
     def __get__(self, instance, owner):
@@ -70,8 +67,8 @@ class Partition(object):
         dlen = len(destinations)
         results = np.recarray((olen, dlen), dtype=distance_matrix.RECORD)
 
-        area_max = area_max or self.area_max
-        factor_max = factor_max or self.factor_max
+        area_max = area_max or instance.area_max
+        factor_max = factor_max or instance.factor_max
 
         chunks = list(partition_matrix(dlen, olen, area_max, factor_max))
 
@@ -89,10 +86,8 @@ class Partition(object):
         return distance_matrix.Result(distances=results)
 
 
-def partition(area_max, factor_max):
-    def _inner(fn):
-        return Partition(area_max, factor_max, fn)
-    return _inner
+def partition(fn):
+    return Partition(fn)
 
 class MatrixIterBlock(NamedTuple):
     x: int

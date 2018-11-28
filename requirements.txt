@@ -3,6 +3,7 @@ aiohttp
 pandas
 numpy
 scipy
+pyyaml
 
 # server
 starlette

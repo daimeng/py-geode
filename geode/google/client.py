@@ -3,6 +3,7 @@ import functools
 import datetime
 import json
 import numpy as np # type: ignore
+from dataclasses import dataclass
 from typing import List, Union, Sequence, Optional
 
 import geode.models as m
@@ -12,18 +13,18 @@ from .geocoding import map_from_address
 from .distance_matrix import map_from_distance_matrix_response
 from .models import GoogleGeocodingResponse, GoogleDistanceMatrixResponse
 
+@dataclass
 class Client(m.dist.Client, m.geoc.Client):
+    type_: str = 'google'
     base_url = 'https://maps.googleapis.com/'
     geocoding_path = 'maps/api/geocode/json'
     distance_matrix_path = 'maps/api/distancematrix/json'
     point_sep = '|'
-    key = ''
+    key: str = ''
+    area_max: int = 625
+    factor_max: int = 380
     # client_id: str
     # secret: str
-
-    def __init__(self, key=None, session=None):
-        self.key = key
-        self.session = session
 
     async def request(self, path, params, session=None):
         print(f'sent request at {(datetime.datetime.now())}')
@@ -49,7 +50,7 @@ class Client(m.dist.Client, m.geoc.Client):
         return await asyncio.gather(*[self.geocode(loc, session=session) for loc in locations])
 
     # TODO: allow feeding addresses directly into distance_matrix?
-    @m.dist.partition(area_max=625, factor_max=380)
+    @m.dist.partition
     @m.dist.dedupe
     async def distance_matrix(self, origins: np.ndarray, destinations: np.ndarray, session=None) -> m.dist.Result:
         res = await self.request(
