@@ -4,6 +4,7 @@ pandas
 numpy
 scipy
 pyyaml
+asyncpg
 
 # server
 starlette

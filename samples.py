@@ -9,13 +9,13 @@ import prettyprinter # type: ignore
 import numpy as np # type: ignore
 
 import geode.models as m
-from geode.dispatcher import Dispatcher
+from geode.dispatcher import AsyncDispatcher
 from geode.config import yaml
 
 prettyprinter.install_extras(include=['dataclasses'])
 
 async def main():
-    client = Dispatcher()
+    client = await AsyncDispatcher.init()
 
     s = time.time()
     res = None
@@ -38,11 +38,11 @@ async def main():
                 (37.1165, -92.2353)
             ]),
             destinations=np.array([
-                (-94.5823, 34.1368),
-                (-96.0384, 36.3408),
-                (-92.0286, 32.2834),
-                (-92.0286, 32.2834)
-            ], dtype=[('lon', float), ('lat', float)]),
+                (34.1368, -94.5823),
+                (36.3408, -96.0384),
+                (32.2834, -92.0286),
+                (32.2834, -92.0286)
+            ]),
             session=session,
             provider='google')
 
