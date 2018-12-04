@@ -53,6 +53,7 @@ class Client(m.dist.Client, m.geoc.Client):
     async def batch_geocode(self, locations: List[m.Location], session=None) -> Sequence[Optional[m.geoc.Result]]:
         return await asyncio.gather(*[self.geocode(loc, session=session) for loc in locations])
 
+    @m.dist.partition
     async def distance_matrix(self, origins: np.ndarray, destinations: np.ndarray, session=None) -> m.dist.Result:
         if len(origins) == 0 or len(destinations) == 0:
             return m.dist.Result(

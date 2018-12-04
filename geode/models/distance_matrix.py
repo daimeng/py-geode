@@ -69,7 +69,7 @@ class Partition(object):
         dlen = len(destinations)
 
         if olen == 0 or dlen == 0:
-            return distance_matrix.Result(distances=[])
+            return await self.fn(instance, origins=origins, destinations=destinations, *args, **kwargs)
 
         results = np.recarray((olen, dlen), dtype=distance_matrix.RECORD)
 
@@ -89,7 +89,11 @@ class Partition(object):
 
             results[y:ys, x:xs] = subres.distances
 
-        return distance_matrix.Result(distances=results)
+        return distance_matrix.Result(
+            origins=origins,
+            destinations=destinations,
+            distances=results
+        )
 
 
 def partition(fn):
