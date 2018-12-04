@@ -5,8 +5,8 @@ import time
 import ujson
 import asyncio
 import uvloop
-import prettyprinter # type: ignore
-import numpy as np # type: ignore
+import prettyprinter
+import numpy as np
 
 import geode.models as m
 from geode.dispatcher import AsyncDispatcher

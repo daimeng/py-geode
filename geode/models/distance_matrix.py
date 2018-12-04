@@ -1,6 +1,6 @@
 import abc
 import asyncio
-import numpy as np # type: ignore
+import numpy as np
 from functools import partial
 from dataclasses import dataclass
 from typing import Sequence, List, Optional, NamedTuple, Iterator

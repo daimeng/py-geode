@@ -56,19 +56,20 @@ class AsyncDispatcher:
         return instance
 
     async def distance_matrix(self, origins, destinations, session=None, provider=None):
+        origins = origins.round(4)
+        destinations = destinations.round(4)
+
         client = self.providers.get(provider)
 
         origins = np.unique(origins, axis=0)
         destinations = np.unique(destinations, axis=0)
 
+        # kick off cache request
+        cache_future = asyncio.ensure_future(
+            self.cache.get_distances(
+                origins, destinations, provider=provider))
+
         idx = create_dist_index(origins, destinations)
-
-        distf = await self.cache.get_distances(
-            origins, destinations, provider=provider)
-        distf_idx = pd.MultiIndex.from_arrays([distf.olat, distf.olon, distf.dlat, distf.dlon])
-        distf['source'] = 'google'
-
-        excludes = idx.merge(distf, on=KEY_COLS, how='left').dropna()
 
         hdists = spatial.distance.cdist(
             origins,
@@ -80,6 +81,13 @@ class AsyncDispatcher:
 
         hdistf = pd.concat([idx, hdistf], axis=1)
         hdistf['source'] = 'gc_manhattan'
+
+        # wait on cache request
+        distf = await cache_future
+        distf_idx = pd.MultiIndex.from_arrays([distf.olat, distf.olon, distf.dlat, distf.dlon])
+        distf['source'] = 'google'
+
+        excludes = idx.merge(distf, on=KEY_COLS, how='left').dropna()
 
         res = await asyncio.gather(*[
             client.distance_matrix(

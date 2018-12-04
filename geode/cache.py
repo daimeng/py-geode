@@ -50,6 +50,7 @@ WHERE (olat, olon) IN {tuple((x[0], x[1]) for x in origins)}
 AND (dlat, dlon) IN {tuple((x[0], x[1]) for x in destinations)};
 '''
 
+
 @dataclass
 class PostgresCache:
     host: str
@@ -81,6 +82,8 @@ class PostgresCache:
     async def set_distances(self, origins, destinations, distances, provider):
         if distances is None or distances.empty:
             return
+
+        distances.drop('source', axis=1, inplace=True)
 
         conn = await self.connection()
 

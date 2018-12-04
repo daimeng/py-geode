@@ -3,7 +3,7 @@ import functools
 import datetime
 import json
 import logging
-import numpy as np # type: ignore
+import numpy as np
 import pandas as pd
 from dataclasses import dataclass
 from typing import List, Union, Sequence, Optional

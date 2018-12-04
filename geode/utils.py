@@ -1,6 +1,6 @@
 import dataclasses
 import enum
-import numpy as np # type: ignore
+import numpy as np
 import pandas as pd
 from typing import Any, Dict, Optional, Union
 
