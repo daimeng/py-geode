@@ -16,5 +16,7 @@ setup(name='geode',
         'numpy',
         'scipy',
         'uvloop',
-        'ujson'
+        'ujson',
+        'asyncpg',
+        'pyyaml'
     ])
