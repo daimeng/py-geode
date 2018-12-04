@@ -1,6 +1,7 @@
 import asyncpg
 import pandas as pd
 from dataclasses import dataclass
+from geode.utils import KEY_COLS
 
 def CREATE_DISTANCE_TABLE(provider):
     return f'''
@@ -72,12 +73,8 @@ class PostgresCache:
 
         distf = pd.DataFrame(
             results,
-            columns=['olat', 'olon', 'dlat', 'dlon', 'precision', 'meters', 'seconds']).drop('precision', 1)
-        distf['olon'] = distf.olon.astype(pd.np.float)
-        distf['olat'] = distf.olat.astype(pd.np.float)
-        distf['dlon'] = distf.dlon.astype(pd.np.float)
-        distf['dlat'] = distf.dlat.astype(pd.np.float)
-        # distf.set_index(pd.MultiIndex.from_arrays([distf.olat, distf.olon, distf.dlat, distf.dlon]), inplace=True)
+            columns=[*KEY_COLS, 'precision', 'meters', 'seconds']).drop('precision', 1)
+        distf[KEY_COLS] = distf[KEY_COLS].astype(pd.np.float)
 
         return distf
 

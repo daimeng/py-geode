@@ -13,7 +13,7 @@ from scipy import spatial
 from geode import google, dist_metrics
 from geode.config import yaml
 from geode.cache import PostgresCache
-from geode.utils import create_dist_index
+from geode.utils import create_dist_index, KEY_COLS
 
 TYPE_MAP = {
     'google': google,
@@ -66,8 +66,9 @@ class AsyncDispatcher:
         distf = await self.cache.get_distances(
             origins, destinations, provider=provider)
         distf_idx = pd.MultiIndex.from_arrays([distf.olat, distf.olon, distf.dlat, distf.dlon])
+        distf['source'] = 'google'
 
-        excludes = idx.merge(distf, on=['olat','olon','dlat','dlon'], how='left').dropna()
+        excludes = idx.merge(distf, on=KEY_COLS, how='left').dropna()
 
         hdists = spatial.distance.cdist(
             origins,
@@ -78,6 +79,7 @@ class AsyncDispatcher:
         hdistf['seconds'] = hdistf.meters / 30
 
         hdistf = pd.concat([idx, hdistf], axis=1)
+        hdistf['source'] = 'gc_manhattan'
 
         res = await asyncio.gather(*[
             client.distance_matrix(
@@ -100,15 +102,21 @@ class AsyncDispatcher:
 
             valid_rows = idx[~idx.index.isin(excludes.index)].reindex(valid).dropna().reset_index(drop=True)
             resdf = pd.concat([valid_rows, flatdf], axis=1)
+            resdf['source'] = 'google'
 
         df = pd.concat([
             hdistf,
             distf,
             resdf
         ], sort=False).drop_duplicates(
-            subset=['olat','olon','dlat','dlon'],
+            subset=KEY_COLS,
             keep='last')
 
+        df.set_index(
+            KEY_COLS,
+            drop=True,
+            inplace=True)
+        df.sort_index(inplace=True)
 
         await self.cache.set_distances(
             origins, destinations, resdf, provider=provider)
