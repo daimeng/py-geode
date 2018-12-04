@@ -13,7 +13,7 @@ def map_from_elm(elm: GoogleDistanceElement) -> Optional[Tuple[int, int]]:
         )
     return None
 
-def map_from_distance_matrix_response(response: GoogleDistanceMatrixResponse) -> m.dist.Result:
+def map_from_distance_matrix_response(response: GoogleDistanceMatrixResponse) -> np.ndarray:
     dlen = len(response.destination_addresses)
     olen = len(response.origin_addresses)
 
@@ -23,6 +23,5 @@ def map_from_distance_matrix_response(response: GoogleDistanceMatrixResponse) ->
         for x, elm in enumerate(row.elements):
             results[y][x] = map_from_elm(elm)
 
-    return m.dist.Result(
-        distances=results
-    )
+    return results
+

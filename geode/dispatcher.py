@@ -2,14 +2,18 @@ import aiohttp
 import asyncio
 import asyncpg
 import os
+import numpy as np
 import pandas as pd
 import ujson
+import uvloop
 from dataclasses import dataclass
 from threading import Thread
-import uvloop
+from scipy import spatial
 
-from geode import google
+from geode import google, dist_metrics
 from geode.config import yaml
+from geode.cache import PostgresCache
+from geode.utils import create_dist_index
 
 TYPE_MAP = {
     'google': google,
@@ -17,100 +21,8 @@ TYPE_MAP = {
     # 'bing': bing
 }
 
-def CREATE_DISTANCE_TABLE(provider):
-    return f'''
-CREATE TABLE IF NOT EXISTS distances_{provider} (
-    olat decimal(7, 4),
-    olon decimal(7, 4),
-    dlat decimal(7, 4),
-    dlon decimal(7, 4),
-    precision smallint,
-    meters double precision,
-    seconds double precision,
-    CONSTRAINT distances_{provider}_pkey PRIMARY KEY (precision, olat, olon, dlat, dlon)
-);
-CREATE UNIQUE INDEX IF NOT EXISTS distances_{provider}_pkey ON distances_{provider} (precision int2_ops,olat numeric_ops,olon numeric_ops,dlat numeric_ops,dlon numeric_ops);
-'''
 
-def CREATE_DISTANCE_TABLE_TEMP(provider):
-    return f'''
-CREATE TEMPORARY TABLE distances_{provider}_tmp (
-    olat decimal(7, 4),
-    olon decimal(7, 4),
-    dlat decimal(7, 4),
-    dlon decimal(7, 4),
-    precision smallint,
-    meters double precision,
-    seconds double precision
-);'''
-
-
-def MERGE_DISTANCES(provider):
-    return f'''
-INSERT INTO distances_{provider}
-	(olat,olon,
-    dlat,dlon,
-    precision,
-    meters,seconds)
-	SELECT * FROM distances_{provider}_tmp
-ON CONFLICT DO NOTHING;
-'''
-
-
-def GET_DISTANCES(provider):
-    return f'''
-SELECT * FROM distances_{provider} LIMIT 1;
-'''
-
-@dataclass
-class PostgresCache:
-    host: str
-    user: str
-    password: str
-    database: str
-
-    async def connection(self):
-        conn = await asyncpg.connect(user=self.user, password=self.password, database=self.database, host=self.host)
-
-        # TODO: loop thru valid providers
-        await conn.execute(CREATE_DISTANCE_TABLE('google'))
-
-        return conn
-
-    async def get_distances(self, origins, destinations):
-        conn = await self.connection()
-        results = conn.fetch(GET_DISTANCES)
-
-        asyncio.ensure_future(conn.close())
-
-        return pd.DataFrame.from_dict(results)
-
-    async def set_distances(self, origins, destinations, distances, provider):
-        conn = await self.connection()
-
-        await conn.execute(CREATE_DISTANCE_TABLE_TEMP(provider))
-
-        df = pd.DataFrame(origins, columns=['olat', 'olon']).assign(k=0).merge(
-            pd.DataFrame(destinations, columns=['dlat', 'dlon']).assign(k=0),
-            on='k'
-        ).drop('k', 1)
-
-        recs = df.merge(
-            pd.DataFrame.from_records(distances.flat),
-            right_index=True,
-            left_index=True
-        ).assign(precision=4).drop_duplicates()
-
-        await conn.copy_records_to_table(
-            f'distances_{provider}_tmp',
-            records=recs.itertuples(index=False),
-            columns=[ x for x in recs.columns ]
-        )
-
-        await conn.execute(MERGE_DISTANCES(provider))
-        await conn.close()
-
-        return
+MAX_METERS = 321869
 
 class AsyncDispatcher:
     cache = None
@@ -144,14 +56,64 @@ class AsyncDispatcher:
         return instance
 
     async def distance_matrix(self, origins, destinations, session=None, provider=None):
-        p = self.providers.get(provider)
+        client = self.providers.get(provider)
 
-        result = await p.distance_matrix(origins, destinations, session=session)
+        origins = np.unique(origins, axis=0)
+        destinations = np.unique(destinations, axis=0)
+
+        idx = create_dist_index(origins, destinations)
+
+        distf = await self.cache.get_distances(
+            origins, destinations, provider=provider)
+        distf_idx = pd.MultiIndex.from_arrays([distf.olat, distf.olon, distf.dlat, distf.dlon])
+
+        excludes = idx.merge(distf, on=['olat','olon','dlat','dlon'], how='left').dropna()
+
+        hdists = spatial.distance.cdist(
+            origins,
+            destinations,
+            dist_metrics.gc_manhattan)
+
+        hdistf = pd.DataFrame(hdists.ravel(), columns=['meters'])
+        hdistf['seconds'] = hdistf.meters / 30
+
+        hdistf = pd.concat([idx, hdistf], axis=1)
+
+        res = await asyncio.gather(*[
+            client.distance_matrix(
+                origins=[orig],
+                destinations=[
+                    d for d in destinations[hdists[i] < MAX_METERS]
+                    if (orig[0], orig[1], d[0], d[1]) not in distf_idx],
+                session=session
+            ) for i, orig in enumerate(origins)
+        ])
+
+        resdf = None
+        flat_res = [row.distances.ravel() for row in res if len(row.distances)]
+        if flat_res:
+            flatdf = pd.DataFrame.from_records(
+                np.concatenate(flat_res)
+            )
+
+            valid = [k for k, v in enumerate((hdists < MAX_METERS).flat) if v]
+
+            valid_rows = idx[~idx.index.isin(excludes.index)].reindex(valid).dropna().reset_index(drop=True)
+            resdf = pd.concat([valid_rows, flatdf], axis=1)
+
+        df = pd.concat([
+            hdistf,
+            distf,
+            resdf
+        ], sort=False).drop_duplicates(
+            subset=['olat','olon','dlat','dlon'],
+            keep='last')
+
 
         await self.cache.set_distances(
-            origins, destinations, result.distances, provider=provider)
+            origins, destinations, resdf, provider=provider)
 
-        return result
+        return df
 
 
 class Dispatcher:

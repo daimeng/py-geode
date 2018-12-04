@@ -2,7 +2,9 @@ import asyncio
 import functools
 import datetime
 import json
+import logging
 import numpy as np # type: ignore
+import pandas as pd
 from dataclasses import dataclass
 from typing import List, Union, Sequence, Optional
 
@@ -12,6 +14,8 @@ from geode.utils import marshall_to, point_to_str
 from .geocoding import map_from_address
 from .distance_matrix import map_from_distance_matrix_response
 from .models import GoogleGeocodingResponse, GoogleDistanceMatrixResponse
+
+logger = logging.getLogger()
 
 @dataclass
 class Client(m.dist.Client, m.geoc.Client):
@@ -27,7 +31,7 @@ class Client(m.dist.Client, m.geoc.Client):
     # secret: str
 
     async def request(self, path, params, session=None):
-        print(f'sent request at {(datetime.datetime.now())}')
+        logger.info(f'sent request at {(datetime.datetime.now())}')
 
         return await session.get(
             self.base_url + path,
@@ -49,10 +53,14 @@ class Client(m.dist.Client, m.geoc.Client):
     async def batch_geocode(self, locations: List[m.Location], session=None) -> Sequence[Optional[m.geoc.Result]]:
         return await asyncio.gather(*[self.geocode(loc, session=session) for loc in locations])
 
-    # TODO: allow feeding addresses directly into distance_matrix?
-    @m.dist.partition
-    @m.dist.dedupe
     async def distance_matrix(self, origins: np.ndarray, destinations: np.ndarray, session=None) -> m.dist.Result:
+        if len(origins) == 0 or len(destinations) == 0:
+            return m.dist.Result(
+                origins=origins,
+                destinations=destinations,
+                distances=np.array([])
+            )
+
         res = await self.request(
             self.distance_matrix_path,
             dict(
@@ -63,4 +71,10 @@ class Client(m.dist.Client, m.geoc.Client):
 
         data = marshall_to(GoogleDistanceMatrixResponse, await res.json())
 
-        return map_from_distance_matrix_response(data)
+        result = map_from_distance_matrix_response(data)
+
+        return m.dist.Result(
+            origins=origins,
+            destinations=destinations,
+            distances=result
+        )

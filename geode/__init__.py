@@ -1,4 +1,4 @@
 from . import models
 from . import utils
-from . import distances
+from . import dist_metrics
 from . import google

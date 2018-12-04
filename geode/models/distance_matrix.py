@@ -13,6 +13,8 @@ RECORD = [('meters', float), ('seconds', float)]
 
 @dataclass
 class Result:
+    origins: np.ndarray # echo
+    destinations: np.ndarray # echo
     distances: np.ndarray
 
 
@@ -30,7 +32,7 @@ class Dedupe(object):
 
     async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, dedupe = True, **kwargs) -> distance_matrix.Result:
         if len(origins) == 0 or len(destinations) == 0:
-            return distance_matrix.Result(distances=None)
+            return distance_matrix.Result(distances=[])
 
         if not dedupe:
             return await self.fn(instance, origins, destinations, *args, **kwargs)
@@ -65,6 +67,10 @@ class Partition(object):
     async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, area_max: int = None, factor_max: int = None, **kwargs):
         olen = len(origins)
         dlen = len(destinations)
+
+        if olen == 0 or dlen == 0:
+            return distance_matrix.Result(distances=[])
+
         results = np.recarray((olen, dlen), dtype=distance_matrix.RECORD)
 
         area_max = area_max or instance.area_max

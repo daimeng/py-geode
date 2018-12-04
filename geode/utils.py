@@ -1,6 +1,7 @@
 import dataclasses
 import enum
 import numpy as np # type: ignore
+import pandas as pd
 from typing import Any, Dict, Optional, Union
 
 import geode.models as m
@@ -11,6 +12,18 @@ def point_to_str(point: np.ndarray, precision=4):
 
     return f"""{point[0]:.{precision}f},{point[1]:.{precision}f}"""
 
+
+O_COLS = ['olat', 'olon']
+D_COLS = ['dlat', 'dlon']
+KEY_COLS = O_COLS + D_COLS
+
+def create_dist_index(origins, destinations):
+    df = pd.DataFrame(origins, columns=O_COLS).assign(k=0).merge(
+        pd.DataFrame(destinations, columns=D_COLS).assign(k=0),
+        on='k'
+    ).drop('k', 1)
+
+    return df
 
 class UnionParseException(Exception):
     def __init__(self, wrapped: Exception = None):
