@@ -84,8 +84,7 @@ class PostgresCache:
         if distances is None or distances.empty:
             return
 
-        distances.drop('source', axis=1, inplace=True)
-        distances.reset_index(inplace=True)
+        distances = distances.drop('source', axis=1).reset_index()
 
         conn = await self.connection()
 

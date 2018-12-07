@@ -69,54 +69,48 @@ class AsyncDispatcher:
             self.cache.get_distances(
                 origins, destinations, provider=provider))
 
-        hdists = spatial.distance.cdist(
+        estimates = spatial.distance.cdist(
             origins,
             destinations,
             dist_metrics.gc_manhattan)
 
-        hdistf = pd.DataFrame(hdists.ravel(), columns=['meters'], index=idx.index)
-        hdistf['seconds'] = hdistf.meters / 30
-        hdistf['source'] = 'gc_manhattan'
+        estimate_df = pd.DataFrame(estimates.ravel(), columns=['meters'], index=idx.index)
+        estimate_df['seconds'] = estimate_df.meters / 30
+        estimate_df['source'] = 'gc_manhattan'
 
-        out_of_range = hdistf.index[hdistf.meters > MAX_METERS]
+        out_of_range = estimate_df.index[estimate_df.meters > MAX_METERS]
 
         # wait on cache request
-        distf = await cache_future
-        distf['source'] = 'google'
+        cache_df = await cache_future
+        cache_df['source'] = 'google'
 
-        miss = pd.DataFrame(
-            index=idx.index.difference(out_of_range).difference(distf.index))
+        missing = pd.DataFrame(
+            index=idx.index.difference(out_of_range).difference(cache_df.index))
 
         res = await asyncio.gather(*[
             client.distance_matrix(
                 origins=[o],
                 destinations=ds.loc[o].index.values,
                 session=session
-            ) for o, ds in miss.groupby(level=[0,1])
+            ) for o, ds in missing.groupby(level=[0,1])
         ])
 
-        resdf = None
-        flat_res = [row.distances.ravel() for row in res if len(row.distances)]
-        if flat_res:
-            resdf = pd.DataFrame.from_records(
-                np.concatenate(flat_res),
-                index=miss.index)
-            resdf['source'] = 'google'
+        res_df = None
+        res_flat = [row.distances.ravel() for row in res if len(row.distances)]
+        if res_flat:
+            res_df = pd.DataFrame.from_records(
+                np.concatenate(res_flat),
+                index=missing.index)
+            res_df['source'] = 'google'
 
-        df = pd.concat([
-            hdistf,
-            distf,
-            resdf
-        ], sort=False)
+        merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
 
-        df = df[~df.index.duplicated(keep='last')]
-
-        df.sort_index(inplace=True)
+        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].sort_index()
 
         await self.cache.set_distances(
-            origins, destinations, resdf, provider=provider)
+            origins, destinations, res_df, provider=provider)
 
-        return df
+        return merged_df
 
 
 class Dispatcher:
