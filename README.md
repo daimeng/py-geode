@@ -48,3 +48,17 @@ olat    olon     dlat    dlon
                  34.1368 -94.5823  543109.161164  18103.638705  gc_manhattan
                  36.3408 -96.0384  424897.528514  14163.250950  gc_manhattan
 ```
+
+#### Example config
+Place in ~/.geode/config.yml
+```yaml
+caching:
+  host: foo.a1b2c3d4e5.us-east-1.rds.amazonaws.com
+  user: bar
+  password: testing123
+  database: sandbox
+providers:
+  google:
+    type_: google
+    key: ${GOOGLE_API_KEY}
+```

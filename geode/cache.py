@@ -76,6 +76,7 @@ class PostgresCache:
             results,
             columns=[*KEY_COLS, 'precision', 'meters', 'seconds']).drop('precision', 1)
         distf[KEY_COLS] = distf[KEY_COLS].astype(pd.np.float)
+        distf.set_index(KEY_COLS, drop=True, inplace=True)
 
         return distf
 
@@ -84,6 +85,7 @@ class PostgresCache:
             return
 
         distances.drop('source', axis=1, inplace=True)
+        distances.reset_index(inplace=True)
 
         conn = await self.connection()
 

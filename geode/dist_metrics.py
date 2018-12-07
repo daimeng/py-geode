@@ -22,3 +22,10 @@ def gc_manhattan(u, v, r=R_EARTH):
         np.array([half_lat, u[1]]),
         np.array([half_lat, v[1]])
     )
+
+PRECISION_THRESHOLD = [
+    2_496_000,
+    1_248_000,
+    642_000,
+    321_000
+]

@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Union
 import geode.models as m
 
 def point_to_str(point: np.ndarray, precision=4):
-    if point.dtype.names:
+    if hasattr(point, 'dtype') and point.dtype.names:
         return f"""{point['lat']:.{precision}f},{point['lon']:.{precision}f}"""
 
     return f"""{point[0]:.{precision}f},{point[1]:.{precision}f}"""
@@ -22,6 +22,7 @@ def create_dist_index(origins, destinations):
         pd.DataFrame(destinations, columns=D_COLS).assign(k=0),
         on='k'
     ).drop('k', 1)
+    df.set_index(KEY_COLS, drop=True, inplace=True)
 
     return df
 

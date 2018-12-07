@@ -56,74 +56,61 @@ class AsyncDispatcher:
         return instance
 
     async def distance_matrix(self, origins, destinations, session=None, provider=None):
-        origins = origins.round(4)
-        destinations = destinations.round(4)
-
         client = self.providers.get(provider)
 
-        origins = np.unique(origins, axis=0)
-        destinations = np.unique(destinations, axis=0)
+        # prepare parameters and indices
+        origins = np.unique(origins.round(4), axis=0)
+        destinations = np.unique(destinations.round(4), axis=0)
+
+        idx = create_dist_index(origins, destinations)
 
         # kick off cache request
         cache_future = asyncio.ensure_future(
             self.cache.get_distances(
                 origins, destinations, provider=provider))
 
-        idx = create_dist_index(origins, destinations)
-
         hdists = spatial.distance.cdist(
             origins,
             destinations,
             dist_metrics.gc_manhattan)
 
-        hdistf = pd.DataFrame(hdists.ravel(), columns=['meters'])
+        hdistf = pd.DataFrame(hdists.ravel(), columns=['meters'], index=idx.index)
         hdistf['seconds'] = hdistf.meters / 30
-
-        hdistf = pd.concat([idx, hdistf], axis=1)
         hdistf['source'] = 'gc_manhattan'
+
+        out_of_range = hdistf.index[hdistf.meters > MAX_METERS]
 
         # wait on cache request
         distf = await cache_future
-        distf_idx = pd.MultiIndex.from_arrays([distf.olat, distf.olon, distf.dlat, distf.dlon])
         distf['source'] = 'google'
 
-        excludes = idx.merge(distf, on=KEY_COLS, how='left').dropna()
+        miss = pd.DataFrame(
+            index=idx.index.difference(out_of_range).difference(distf.index))
 
         res = await asyncio.gather(*[
             client.distance_matrix(
-                origins=[orig],
-                destinations=[
-                    d for d in destinations[hdists[i] < MAX_METERS]
-                    if (orig[0], orig[1], d[0], d[1]) not in distf_idx],
+                origins=[o],
+                destinations=ds.loc[o].index.values,
                 session=session
-            ) for i, orig in enumerate(origins)
+            ) for o, ds in miss.groupby(level=[0,1])
         ])
 
         resdf = None
         flat_res = [row.distances.ravel() for row in res if len(row.distances)]
         if flat_res:
-            flatdf = pd.DataFrame.from_records(
-                np.concatenate(flat_res)
-            )
-
-            valid = [k for k, v in enumerate((hdists < MAX_METERS).flat) if v]
-
-            valid_rows = idx[~idx.index.isin(excludes.index)].reindex(valid).dropna().reset_index(drop=True)
-            resdf = pd.concat([valid_rows, flatdf], axis=1)
+            resdf = pd.DataFrame.from_records(
+                np.concatenate(flat_res),
+                index=miss.index)
             resdf['source'] = 'google'
 
         df = pd.concat([
             hdistf,
             distf,
             resdf
-        ], sort=False).drop_duplicates(
-            subset=KEY_COLS,
-            keep='last')
+        ], sort=False)
 
-        df.set_index(
-            KEY_COLS,
-            drop=True,
-            inplace=True)
+        df = df[~df.index.duplicated(keep='last')]
+
         df.sort_index(inplace=True)
 
         await self.cache.set_distances(
