@@ -5,13 +5,8 @@ numpy
 scipy
 pyyaml
 asyncpg
-
-# server
-starlette
-uvicorn
-graphene
-uvloop
 ujson
+uvloop
 
 # testing
 pytest

@@ -112,6 +112,12 @@ class AsyncDispatcher:
 
         return merged_df
 
+    async def distance_pairs(self, origins, destinations, session=None, provider=None):
+        client = self.providers.get(provider)
+        import pdb; pdb.set_trace()
+
+        zip(origins, destinations)
+        return
 
 class Dispatcher:
     cache = None

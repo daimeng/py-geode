@@ -46,8 +46,8 @@ ON CONFLICT DO NOTHING;
 def GET_DISTANCES(provider, origins, destinations):
     return f'''
 SELECT * FROM distances_{provider}
-WHERE (olat, olon) IN {tuple((x[0], x[1]) for x in origins)}
-AND (dlat, dlon) IN {tuple((x[0], x[1]) for x in destinations)};
+WHERE (olat, olon) IN ({','.join(f'({x[0]},{x[1]})' for x in origins)})
+AND (dlat, dlon) IN ({','.join(f'({x[0]},{x[1]})' for x in destinations)});
 '''
 
 
