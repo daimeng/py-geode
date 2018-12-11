@@ -2,6 +2,7 @@ import dataclasses
 import enum
 import numpy as np
 import pandas as pd
+from itertools import zip_longest
 from typing import Any, Dict, Optional, Union
 
 import geode.models as m
@@ -25,6 +26,14 @@ def create_dist_index(origins, destinations):
     df.set_index(KEY_COLS, drop=True, inplace=True)
 
     return df
+
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    if fillvalue is None:
+        return zip(*args)
+    else:
+        return zip_longest(*args, fillvalue=fillvalue)
+
 
 class UnionParseException(Exception):
     def __init__(self, wrapped: Exception = None):

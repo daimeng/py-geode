@@ -43,7 +43,13 @@ ON CONFLICT DO NOTHING;
 '''
 
 
-def GET_DISTANCES(provider, origins, destinations):
+def GET_DISTANCES(provider, origins, destinations, pair=False):
+    if pair:
+        return f'''
+SELECT * FROM distances_{provider}
+WHERE (olat, olon, dlat, dlon) IN ({','.join(f'({o[0]},{o[1]},{d[0]},{d[1]})' for o, d in zip(origins, destinations))});
+'''
+
     return f'''
 SELECT * FROM distances_{provider}
 WHERE (olat, olon) IN ({','.join(f'({x[0]},{x[1]})' for x in origins)})
@@ -66,9 +72,9 @@ class PostgresCache:
 
         return conn
 
-    async def get_distances(self, origins, destinations, provider):
+    async def get_distances(self, origins, destinations, provider=None, pair=False):
         conn = await self.connection()
-        results = await conn.fetch(GET_DISTANCES(provider, origins, destinations))
+        results = await conn.fetch(GET_DISTANCES(provider, origins, destinations, pair))
 
         await conn.close()
 
