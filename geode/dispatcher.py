@@ -55,7 +55,7 @@ class AsyncDispatcher:
             instance.cache_conn = await instance.cache.connection()
         return instance
 
-    async def distance_matrix(self, origins, destinations, session=None, provider=None):
+    async def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, session=None, provider=None):
         client = self.providers.get(provider)
 
         # prepare parameters and indices
@@ -78,7 +78,7 @@ class AsyncDispatcher:
         estimate_df['seconds'] = estimate_df.meters / 30
         estimate_df['source'] = 'gc_manhattan'
 
-        out_of_range = estimate_df.index[estimate_df.meters > MAX_METERS]
+        out_of_range = estimate_df.index[estimate_df.meters > max_meters]
 
         # wait on cache request
         cache_df = await cache_future
@@ -125,8 +125,12 @@ class AsyncDispatcher:
 
         return res
 
-    async def distance_pairs(self, origins, destinations, session=None, provider=None):
+    async def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, session=None, provider=None):
         client = self.providers.get(provider)
+
+        origins = origins.round(4)
+        destinations = destinations.round(4)
+
         idx = pd.DataFrame(np.hstack((origins, destinations)), columns=KEY_COLS).set_index(KEY_COLS)
 
         cache_future = asyncio.ensure_future(
