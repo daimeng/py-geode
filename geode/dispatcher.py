@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import ujson
 import uvloop
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from threading import Thread
 from scipy import spatial
@@ -185,20 +186,24 @@ class Dispatcher:
     loop = None
 
     def __init__(self, config=None):
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-        loop = asyncio.new_event_loop()
+        self.dispatcher = self.run(AsyncDispatcher.init(config))
 
-        self.dispatcher = loop.run_until_complete(AsyncDispatcher.init(config))
-        self.loop = loop
+    def run(self, coro):
+        self.loop = self.loop or asyncio.new_event_loop()
 
-    async def distance_matrix_with_session(self, origins, destinations, provider=None):
+        future = ThreadPoolExecutor().submit(self.loop.run_until_complete, coro)
+
+        return future.result()
+
+    async def distance_matrix_with_session(self, origins, destinations, max_meters=MAX_METERS, provider=None):
         async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.distance_matrix(origins, destinations, session=session, provider=provider)
 
-    def distance_matrix(self, origins, destinations, provider=None):
-        return self.loop.run_until_complete(
-            self.distance_matrix_with_session(origins, destinations, provider=provider)
+    def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None):
+        return self.run(
+            self.distance_matrix_with_session(origins, destinations, max_meters, provider=provider)
         )
 
     def __del__(self):
-        self.loop.stop()
+        if self.loop:
+            self.loop.stop()
