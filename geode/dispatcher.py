@@ -188,6 +188,9 @@ class Dispatcher:
     def __init__(self, config=None):
         self.dispatcher = self.run(AsyncDispatcher.init(config))
 
+    def session(self):
+        return aiohttp.ClientSession(json_serialize=ujson.dumps)
+
     def run(self, coro):
         self.loop = self.loop or asyncio.new_event_loop()
 
@@ -195,13 +198,14 @@ class Dispatcher:
 
         return future.result()
 
-    async def distance_matrix_with_session(self, origins, destinations, max_meters=MAX_METERS, provider=None):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
-            return await self.dispatcher.distance_matrix(origins, destinations, session=session, provider=provider)
-
     def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None):
         return self.run(
-            self.distance_matrix_with_session(origins, destinations, max_meters, provider=provider)
+            self.dispatcher.distance_matrix(origins, destinations, max_meters, session=self.session(), provider=provider)
+        )
+
+    def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, provider=None):
+        return self.run(
+            self.dispatcher.distance_pairs(origins, destinations, max_meters, session=self.session(), provider=provider)
         )
 
     def __del__(self):
