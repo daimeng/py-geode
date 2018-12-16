@@ -186,26 +186,30 @@ class Dispatcher:
     loop = None
 
     def __init__(self, config=None):
+        self.loop = asyncio.new_event_loop()
         self.dispatcher = self.run(AsyncDispatcher.init(config))
 
-    def session(self):
-        return aiohttp.ClientSession(json_serialize=ujson.dumps)
-
     def run(self, coro):
-        self.loop = self.loop or asyncio.new_event_loop()
-
         future = ThreadPoolExecutor().submit(self.loop.run_until_complete, coro)
 
         return future.result()
 
+    async def distance_matrix_with_session(self, *args, **kwargs):
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+            return await self.dispatcher.distance_matrix(*args, **kwargs, session=session)
+
+    async def distance_pairs_with_session(self, *args, **kwargs):
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+            return await self.dispatcher.distance_pairs(*args, **kwargs, session=session)
+
     def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None):
         return self.run(
-            self.dispatcher.distance_matrix(origins, destinations, max_meters, session=self.session(), provider=provider)
+            self.distance_matrix_with_session(origins, destinations, max_meters, provider=provider)
         )
 
     def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, provider=None):
         return self.run(
-            self.dispatcher.distance_pairs(origins, destinations, max_meters, session=self.session(), provider=provider)
+            self.distance_pairs_with_session(origins, destinations, max_meters, provider=provider)
         )
 
     def __del__(self):
