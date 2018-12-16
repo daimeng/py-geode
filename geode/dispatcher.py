@@ -165,7 +165,7 @@ class AsyncDispatcher:
         if not missing.index.empty:
             origins, destinations = zip(*[((a,b),(c,d))for a,b,c,d in missing.index])
             res = await distance_pairs(origins, destinations, session=session, provider=provider)
-            res_df = pd.DataFrame.from_records(np.array([r.distances for r in res]).diagonal().flat, index=missing.index)
+            res_df = pd.DataFrame.from_records(np.array([r.distances for r in res]).flat, index=missing.index)
             res_df['source'] = 'google'
 
         merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
