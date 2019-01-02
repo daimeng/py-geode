@@ -88,6 +88,20 @@ class AsyncDispatcher:
         missing = pd.DataFrame(
             index=idx.index.difference(out_of_range).difference(cache_df.index))
 
+        res_df = await self.distance_rows(missing, session=session, provider=provider)
+
+        merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
+
+        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].sort_index()
+
+        await self.cache.set_distances(
+            origins, destinations, res_df, provider=provider)
+
+        return merged_df
+
+    async def distance_rows(self, missing, session=None, provider=None):
+        client = self.providers.get(provider)
+
         res = await asyncio.gather(*[
             client.distance_matrix(
                 origins=[o],
@@ -104,14 +118,7 @@ class AsyncDispatcher:
                 index=missing.index)
             res_df['source'] = 'google'
 
-        merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
-
-        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].sort_index()
-
-        await self.cache.set_distances(
-            origins, destinations, res_df, provider=provider)
-
-        return merged_df
+        return res_df
 
     async def distance_pairs_shim(self, origins, destinations, session=None, provider=None):
         client = self.providers.get(provider)
@@ -155,18 +162,7 @@ class AsyncDispatcher:
         missing = pd.DataFrame(
             index=idx.index.difference(out_of_range).difference(cache_df.index))
 
-        if hasattr(client, 'distance_pairs'):
-            distance_pairs = client.distance_pairs
-        else:
-            distance_pairs = self.distance_pairs_shim
-        
-        # unpack
-        res_df = None
-        if not missing.index.empty:
-            origins, destinations = zip(*[((a,b),(c,d))for a,b,c,d in missing.index])
-            res = await distance_pairs(origins, destinations, session=session, provider=provider)
-            res_df = pd.DataFrame.from_records(np.array([r.distances for r in res]).flat, index=missing.index)
-            res_df['source'] = 'google'
+        res_df = await self.distance_rows(missing, session=session, provider=provider)
 
         merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
 
