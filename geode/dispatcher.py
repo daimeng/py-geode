@@ -29,6 +29,7 @@ class AsyncDispatcher:
     cache = None
     cache_conn = None
     providers = {}
+    semaphore = None
 
     def __init__(self, config=None):
         # load default configs from home path config
@@ -49,6 +50,8 @@ class AsyncDispatcher:
         if 'caching' in config:
             self.cache = PostgresCache(**config['caching'])
 
+        self.semaphore = asyncio.BoundedSemaphore(200)
+
     @classmethod
     async def init(cls, config=None):
         instance = cls(config)
@@ -57,8 +60,6 @@ class AsyncDispatcher:
         return instance
 
     async def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, session=None, provider=None):
-        client = self.providers.get(provider)
-
         # prepare parameters and indices
         origins = np.unique(origins.round(4), axis=0)
         destinations = np.unique(destinations.round(4), axis=0)
@@ -99,14 +100,19 @@ class AsyncDispatcher:
 
         return merged_df
 
-    async def distance_rows(self, missing, session=None, provider=None):
+    async def throttled_distance_matrix(self, origins, destinations, session=None, provider=None):
         client = self.providers.get(provider)
 
+        async with self.semaphore:
+            return await client.distance_matrix(origins, destinations, session=session)
+
+    async def distance_rows(self, missing, session=None, provider=None):
         res = await asyncio.gather(*[
-            client.distance_matrix(
+            self.throttled_distance_matrix(
                 origins=[o],
                 destinations=ds.loc[o].index.values,
-                session=session
+                session=session,
+                provider=provider
             ) for o, ds in missing.groupby(level=[0,1])
         ])
 
@@ -134,8 +140,6 @@ class AsyncDispatcher:
         return res
 
     async def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, session=None, provider=None):
-        client = self.providers.get(provider)
-
         origins = origins.round(4)
         destinations = destinations.round(4)
 
