@@ -59,6 +59,10 @@ class AsyncDispatcher:
             instance.cache_conn = await instance.cache.connection()
         return instance
 
+    async def geocode(self, address, session=None, provider=None):
+        client = self.providers.get(provider)
+        return await client.geocode(address, session=session)
+
     async def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, session=None, provider=None):
         # prepare parameters and indices
         origins = np.unique(origins.round(4), axis=0)
