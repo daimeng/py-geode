@@ -22,19 +22,17 @@ async def main():
 
     async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
 
-        # if len(sys.argv) > 1 and sys.argv[1] == 'g':
-        #     res = await client.batch_geocode([
-        #         '500 Rutherford Ave, Charlestown MA',
-        #         'Cake Factory',
-        #         '21 Henr St, Bristol, UK',
-        #         'TD Bank 250 Cambridge Street Boston, MA 02114',
-        #         m.GeoPoint(lon=-94.5823, lat=34.1368)
-        #     ], session=session)
-        # else:
-        res = await client.geocode(
-            "500 Rutherford Ave, Charlestown, MA 02129",
+        res = await client.batch_geocode(
+            [
+                '500 Rutherford Ave, Charlestown MA',
+                'Cake Factory',
+                '21 Henr St, Bristol, UK',
+                'TD Bank 250 Cambridge Street Boston, MA 02114',
+                m.GeoPoint(lon=-94.5823, lat=34.1368)
+            ],
             session=session,
-            provider='google')
+            provider='google'
+        )
 
     t = time.time() - s
     prettyprinter.pprint(res)

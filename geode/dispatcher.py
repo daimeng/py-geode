@@ -50,6 +50,7 @@ class AsyncDispatcher:
         if 'caching' in config:
             self.cache = PostgresCache(**config['caching'])
 
+        # tmp solution
         self.semaphore = asyncio.BoundedSemaphore(200)
 
     @classmethod
@@ -60,8 +61,20 @@ class AsyncDispatcher:
         return instance
 
     async def geocode(self, address, session=None, provider=None):
+        return self.throttled_geocode(address, session=session, provider=provider)
+
+    async def throttled_geocode(self, address, session=None, provider=None):
         client = self.providers.get(provider)
-        return await client.geocode(address, session=session)
+
+        async with self.semaphore:
+            return await client.geocode(address, session=session)
+
+    async def batch_geocode(self, locations, session=None, provider=None):
+        # TODO: check here if client has batch
+        return await asyncio.gather(*[
+            self.throttled_geocode(loc, session=session, provider=provider)
+            for loc in locations]
+        )
 
     async def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, session=None, provider=None):
         # prepare parameters and indices
@@ -198,6 +211,7 @@ class Dispatcher:
 
         return future.result()
 
+    # TODO: find way to consolidate these wrappers
     async def distance_matrix_with_session(self, *args, **kwargs):
         async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
             return await self.dispatcher.distance_matrix(*args, **kwargs, session=session)
@@ -205,6 +219,10 @@ class Dispatcher:
     async def distance_pairs_with_session(self, *args, **kwargs):
         async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
             return await self.dispatcher.distance_pairs(*args, **kwargs, session=session)
+
+    async def batch_geocode_with_session(self, *args, **kwargs):
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+            return await self.dispatcher.batch_geocode(*args, **kwargs, session=session)
 
     def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None):
         return self.run(
@@ -214,6 +232,11 @@ class Dispatcher:
     def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, provider=None):
         return self.run(
             self.distance_pairs_with_session(origins, destinations, max_meters, provider=provider)
+        )
+
+    def batch_geocode(self, addresses, provider=None):
+        return self.run(
+            self.batch_geocode_with_session(addresses, provider=provider)
         )
 
     def __del__(self):

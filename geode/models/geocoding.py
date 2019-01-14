@@ -24,5 +24,5 @@ class Client(abc.ABC):
     @abc.abstractmethod
     async def geocode(self, location: Location) -> Optional[Result]: pass
 
-    @abc.abstractmethod
-    async def batch_geocode(self, locations: List[Location]) -> Sequence[Optional[Result]]: pass
+    # @abc.abstractmethod
+    # async def batch_geocode(self, locations: List[Location]) -> Sequence[Optional[Result]]: pass
