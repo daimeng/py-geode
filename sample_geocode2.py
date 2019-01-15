@@ -31,6 +31,7 @@ def main():
     )
 
     t = time.time() - s
+    # convert to dataframe
     prettyprinter.pprint(addresses_to_df(res))
     print('Duration: %dms' % (t * 1000))
 

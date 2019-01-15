@@ -79,7 +79,7 @@ def marshall_to(cls: Any, data: Optional[Any]):
 def addresses_to_df(addresses):
     df = pd.concat(map(pd.io.json.json_normalize, map(dataclasses.asdict, addresses)))
     df.reset_index(drop=True, inplace=True)
-    df['lat'] = df.point.apply(lambda x: x[0])
-    df['lon'] = df.point.apply(lambda x: x[1])
+    df['lat'] = df.point.apply(lambda x: x[0]).round(4)
+    df['lon'] = df.point.apply(lambda x: x[1]).round(4)
     df.drop('point', axis=1, inplace=True)
     return df

@@ -41,14 +41,14 @@ class Client(m.dist.Client, m.geoc.Client):
             )
         )
 
-    async def geocode(self, location: m.Location, session=None) -> Optional[m.geoc.Result]:
+    async def geocode(self, location: m.Location, session=None) -> Sequence[m.geoc.Result]:
         if isinstance(location, str):
             res = await self.request(self.geocoding_path, dict(address=location), session=session)
         else:
             res = await self.request(self.geocoding_path, dict(address=point_to_str(location)), session=session)
 
         data = marshall_to(GoogleGeocodingResponse, await res.json())
-        return next(map(map_from_address, data.results), None)
+        return list(map(map_from_address, data.results))
 
     @m.dist.partition
     async def distance_matrix(self, origins: np.ndarray, destinations: np.ndarray, session=None) -> m.dist.Result:

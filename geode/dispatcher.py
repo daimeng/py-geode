@@ -61,7 +61,7 @@ class AsyncDispatcher:
         return instance
 
     async def geocode(self, address, session=None, provider=None):
-        return self.throttled_geocode(address, session=session, provider=provider)
+        return await self.throttled_geocode(address, session=session, provider=provider)
 
     async def throttled_geocode(self, address, session=None, provider=None):
         client = self.providers.get(provider)
@@ -224,6 +224,10 @@ class Dispatcher:
         async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
             return await self.dispatcher.batch_geocode(*args, **kwargs, session=session)
 
+    async def geocode_with_session(self, *args, **kwargs):
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+            return await self.dispatcher.throttled_geocode(*args, **kwargs, session=session)
+
     def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None):
         return self.run(
             self.distance_matrix_with_session(origins, destinations, max_meters, provider=provider)
@@ -237,6 +241,11 @@ class Dispatcher:
     def batch_geocode(self, addresses, provider=None):
         return self.run(
             self.batch_geocode_with_session(addresses, provider=provider)
+        )
+
+    def geocode(self, address, provider=None):
+        return self.run(
+            self.geocode_with_session(address, provider=provider)
         )
 
     def __del__(self):
