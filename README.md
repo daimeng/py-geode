@@ -62,3 +62,15 @@ providers:
     type_: google
     key: ${GOOGLE_API_KEY}
 ```
+
+## Precision
+Google's precision metrics make the most sense.
+
+Precision is not confidence. The completely wrong result could return with a high precision.
+Precision is not the address type, but accuracy of the coordinates.
+As such a city can never have ```Precision.ROOFTOP```.
+```Precision.GEOMETRIC_CENTER``` will usually apply to any smaller area results.
+A street result may have that or ```Precision.RANGE_INTERPOLATED```.
+```Precision.APPROXIMATE``` is the default and lowest. If any result is returned, it by definition must have *some* precision.
+
+## Confidence

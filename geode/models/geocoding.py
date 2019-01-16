@@ -7,17 +7,26 @@ from geode.models.common import Location, Address, GeoPoint
 
 
 class Confidence(enum.Enum):
-    NONE = 0
-    LOW = 1
-    PARTIAL = 2
-    EXACT = 3
+    LOW = 0
+    PARTIAL = 1
+    EXACT = 2
 
+class Precision(enum.Enum):
+    APPROXIMATE = 0
+    GEOMETRIC_CENTER = 1
+    RANGE_INTERPOLATED = 2
+    ROOFTOP = 3
+
+    # @staticmethodgit st
+    # def from_address(address: Address):
+    #     pass
 
 @dataclass
 class Result:
     address: Address
     point: Optional[GeoPoint]
-    confidence: Confidence = Confidence.NONE
+    confidence: Confidence = Confidence.LOW
+    precision: Precision = Precision.APPROXIMATE
 
 
 class Client(abc.ABC):

@@ -83,3 +83,6 @@ def addresses_to_df(addresses):
     df['lon'] = df.point.apply(lambda x: x[1]).round(4)
     df.drop('point', axis=1, inplace=True)
     return df
+
+def first_or_none(arr):
+    return next(iter(arr), None)

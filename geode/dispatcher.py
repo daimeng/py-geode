@@ -14,7 +14,7 @@ from scipy import spatial
 from geode import google, dist_metrics
 from geode.config import yaml
 from geode.cache import PostgresCache
-from geode.utils import create_dist_index, grouper, KEY_COLS
+from geode.utils import create_dist_index, grouper, KEY_COLS, first_or_none
 
 TYPE_MAP = {
     'google': google,
@@ -71,10 +71,10 @@ class AsyncDispatcher:
 
     async def batch_geocode(self, locations, session=None, provider=None):
         # TODO: check here if client has batch
-        return await asyncio.gather(*[
+        return list(map(first_or_none, await asyncio.gather(*[
             self.throttled_geocode(loc, session=session, provider=provider)
             for loc in locations]
-        )
+        )))
 
     async def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, session=None, provider=None):
         # prepare parameters and indices

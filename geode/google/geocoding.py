@@ -39,14 +39,17 @@ def map_from_address(address: GoogleAddress) -> m.geoc.Result:
 
     # TODO: Handle cases where exact match found for vague input
     conf = m.geoc.Confidence.LOW
+    prec = m.geoc.Precision.GEOMETRIC_CENTER
     if geometry.location_type == GoogleLocationType.ROOFTOP:
+        prec = m.geoc.Precision.ROOFTOP
         conf = m.geoc.Confidence.EXACT
         if address.partial_match:
-            conf = m.geoc.Confidence.PARTIAL   
+            conf = m.geoc.Confidence.PARTIAL
 
     res = m.geoc.Result(
         address=addr,
         point=latlng_to_point(geometry.location),
-        confidence=conf
+        confidence=conf,
+        precision=prec
     )
     return res

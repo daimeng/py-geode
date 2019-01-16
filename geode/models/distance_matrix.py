@@ -60,7 +60,7 @@ def dedupe(fn):
 class Partition(object):
     def __init__(self, fn):
         self.fn = fn
-    
+
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
