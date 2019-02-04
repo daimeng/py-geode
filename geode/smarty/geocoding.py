@@ -1,5 +1,3 @@
-from typing import List, Dict, Any
-
 import geode.models as m
 from .models import SmartyGeocodingResponse, SmartyComponents
 # from .models import GoogleAddress, GoogleAddressComponent, GooglePoint, GoogleLocationType

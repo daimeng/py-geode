@@ -1,16 +1,11 @@
 import asyncio
-import functools
 import datetime
-import json
 import logging
-import numpy as np
-import pandas as pd
 from dataclasses import dataclass
-from typing import List, Union, Sequence, Optional
+from typing import List, Sequence, Optional
 
 import geode.models as m
 from geode.utils import marshall_to, point_to_str
-
 from .geocoding import map_from_address
 from .models import SmartyGeocodingResponse
 

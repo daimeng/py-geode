@@ -2,7 +2,7 @@ import yaml
 import re
 import os
 
-path_matcher = re.compile(r'\$\{([^}^{]+)\}')
+path_matcher = re.compile(r'\${([^}^{]+)\}')
 
 
 def path_constructor(loader, node):

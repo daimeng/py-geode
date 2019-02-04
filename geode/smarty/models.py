@@ -1,12 +1,9 @@
-import enum
 from dataclasses import dataclass
-from typing import List, Optional
+
 
 @dataclass
 class SmartyComponents:
     primary_number: str
-    secondary_number: str = ''
-    secondary_designator: str = ''
     street_name: str
     street_suffix: str
     city_name: str
@@ -16,6 +13,8 @@ class SmartyComponents:
     plus4_code: str
     delivery_point: str
     delivery_point_check_digit: str
+    secondary_number: str = ''
+    secondary_designator: str = ''
 
 @dataclass
 class SmartyMetadata:

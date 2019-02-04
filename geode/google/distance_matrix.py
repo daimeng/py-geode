@@ -9,7 +9,7 @@ from .models import GoogleDistanceMatrixResponse, GoogleDistanceElement, GoogleD
 def map_from_elm(elm: GoogleDistanceElement) -> Optional[Tuple[int, int]]:
     if elm.status == GoogleDistanceElementStatus.OK:
         return (
-            elm.distance_matrixance.value,
+            elm.distance.value,
             elm.duration.value
         )
     return None

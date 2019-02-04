@@ -1,14 +1,14 @@
 import datetime
 import logging
-import numpy as np
 from dataclasses import dataclass
 from typing import Sequence
 
+import numpy as np
+
 import geode.models as m
 from geode.utils import marshall_to, point_to_str
-
-from .geocoding import map_from_address
 from .distance_matrix import map_from_distance_matrix_response
+from .geocoding import map_from_address
 from .models import GoogleGeocodingResponse, GoogleDistanceMatrixResponse
 
 logger = logging.getLogger()
