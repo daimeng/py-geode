@@ -1,3 +1,3 @@
-import geode.models.distance_matrix as dist
-import geode.models.geocoding as geoc
-from geode.models.common import *
+from .common import *
+from . import distance_matrix
+from . import geocoding

@@ -3,7 +3,7 @@ import enum
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from geode.models.common import Location, Address, GeoPoint
+from .common import Location, Address, GeoPoint
 
 
 class Confidence(enum.Enum):

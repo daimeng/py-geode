@@ -15,7 +15,7 @@ def from_address_components(c: SmartyComponents) -> m.Address:
         postcode_ext=c.plus4_code
     )
 
-def from_response(resp: SmartyGeocodingResponse) -> m.geoc.Result:
+def from_response(resp: SmartyGeocodingResponse) -> m.geocoding.Result:
     addr = from_address_components(resp.components)
 
     addr.formatted = ', '.join(filter(None, [resp.delivery_line_1, resp.last_line]))
@@ -23,10 +23,10 @@ def from_response(resp: SmartyGeocodingResponse) -> m.geoc.Result:
 
     point = m.GeoPoint(lat=resp.metadata.latitude, lon=resp.metadata.longitude)
 
-    prec = m.geoc.Precision.GEOMETRIC_CENTER
-    conf = m.geoc.Confidence.LOW
+    prec = m.geocoding.Precision.GEOMETRIC_CENTER
+    conf = m.geocoding.Confidence.LOW
 
-    res = m.geoc.Result(
+    res = m.geocoding.Result(
         address=addr,
         point=point,
         confidence=conf,

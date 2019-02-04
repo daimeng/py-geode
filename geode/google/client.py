@@ -15,7 +15,7 @@ logger = logging.getLogger()
 
 
 @dataclass
-class Client(m.dist.Client, m.geoc.Client):
+class Client(m.distance_matrix.Client, m.geocoding.Client):
     type_: str = 'google'
     base_url = 'https://maps.googleapis.com/'
     geocoding_path = 'maps/api/geocode/json'
@@ -39,7 +39,7 @@ class Client(m.dist.Client, m.geoc.Client):
             )
         )
 
-    async def geocode(self, location: m.Location, session=None) -> Sequence[m.geoc.Result]:
+    async def geocode(self, location: m.Location, session=None) -> Sequence[m.geocoding.Result]:
         if isinstance(location, str):
             res = await self.request(self.geocoding_path, dict(address=location), session=session)
         else:
@@ -48,10 +48,10 @@ class Client(m.dist.Client, m.geoc.Client):
         data = marshall_to(GoogleGeocodingResponse, await res.json())
         return list(map(map_from_address, data.results))
 
-    @m.dist.partition
-    async def distance_matrix(self, origins: np.ndarray, destinations: np.ndarray, session=None) -> m.dist.Result:
+    @m.distance_matrix.partition
+    async def distance_matrix(self, origins: np.ndarray, destinations: np.ndarray, session=None) -> m.distance_matrix.Result:
         if len(origins) == 0 or len(destinations) == 0:
-            return m.dist.Result(
+            return m.distance_matrix.Result(
                 origins=origins,
                 destinations=destinations,
                 distances=np.array([])
@@ -69,7 +69,7 @@ class Client(m.dist.Client, m.geoc.Client):
 
         result = map_from_distance_matrix_response(data)
 
-        return m.dist.Result(
+        return m.distance_matrix.Result(
             origins=origins,
             destinations=destinations,
             distances=result

@@ -17,7 +17,7 @@ from .models import SmartyGeocodingResponse
 logger = logging.getLogger()
 
 @dataclass
-class Client(m.dist.Client, m.geoc.Client):
+class Client(m.distance_matrix.Client, m.geocoding.Client):
     type_: str = 'smartys'
     base_url = 'https://maps.googleapis.com/'
     geocoding_path = 'maps/api/geocode/json'
@@ -40,7 +40,7 @@ class Client(m.dist.Client, m.geoc.Client):
             )
         )
 
-    async def geocode(self, location: m.Location, session=None) -> Optional[m.geoc.Result]:
+    async def geocode(self, location: m.Location, session=None) -> Optional[m.geocoding.Result]:
         if isinstance(location, str):
             res = await self.request(self.geocoding_path, dict(address=location), session=session)
         else:
@@ -49,5 +49,5 @@ class Client(m.dist.Client, m.geoc.Client):
         data = marshall_to(SmartyGeocodingResponse, await res.json())
         return next(map(map_from_address, data.results), None)
 
-    async def batch_geocode(self, locations: List[m.Location], session=None) -> Sequence[Optional[m.geoc.Result]]:
+    async def batch_geocode(self, locations: List[m.Location], session=None) -> Sequence[Optional[m.geocoding.Result]]:
         return await asyncio.gather(*[self.geocode(loc, session=session) for loc in locations])

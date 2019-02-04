@@ -5,7 +5,7 @@ from functools import partial
 from dataclasses import dataclass
 from typing import NamedTuple, Iterator
 
-from geode.models import distance_matrix
+from . import distance_matrix
 
 RECORD = [('meters', float), ('seconds', float)]
 

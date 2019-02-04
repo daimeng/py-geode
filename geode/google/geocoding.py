@@ -34,22 +34,22 @@ def latlng_to_point(latlng: GooglePoint) -> m.GeoPoint:
     return m.GeoPoint(lat=latlng.lat, lon=latlng.lng)
 
 
-def map_from_address(address: GoogleAddress) -> m.geoc.Result:
+def map_from_address(address: GoogleAddress) -> m.geocoding.Result:
     addr = map_from_address_components(address.address_components)
     addr.formatted = address.formatted_address
 
     geometry = address.geometry
 
     # TODO: Handle cases where exact match found for vague input
-    conf = m.geoc.Confidence.LOW
-    prec = m.geoc.Precision.GEOMETRIC_CENTER
+    conf = m.geocoding.Confidence.LOW
+    prec = m.geocoding.Precision.GEOMETRIC_CENTER
     if geometry.location_type == GoogleLocationType.ROOFTOP:
-        prec = m.geoc.Precision.ROOFTOP
-        conf = m.geoc.Confidence.EXACT
+        prec = m.geocoding.Precision.ROOFTOP
+        conf = m.geocoding.Confidence.EXACT
         if address.partial_match:
-            conf = m.geoc.Confidence.PARTIAL
+            conf = m.geocoding.Confidence.PARTIAL
 
-    res = m.geoc.Result(
+    res = m.geocoding.Result(
         address=addr,
         point=latlng_to_point(geometry.location),
         confidence=conf,

@@ -9,7 +9,7 @@ from .models import GoogleDistanceMatrixResponse, GoogleDistanceElement, GoogleD
 def map_from_elm(elm: GoogleDistanceElement) -> Optional[Tuple[int, int]]:
     if elm.status == GoogleDistanceElementStatus.OK:
         return (
-            elm.distance.value,
+            elm.distance_matrixance.value,
             elm.duration.value
         )
     return None
@@ -19,7 +19,7 @@ def map_from_distance_matrix_response(response: GoogleDistanceMatrixResponse) ->
     dlen = len(response.destination_addresses)
     olen = len(response.origin_addresses)
 
-    results = np.recarray((olen, dlen), dtype=m.dist.RECORD)
+    results = np.recarray((olen, dlen), dtype=m.distance_matrix.RECORD)
 
     for y, row in enumerate(response.rows):
         for x, elm in enumerate(row.elements):
