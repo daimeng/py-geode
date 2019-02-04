@@ -3,9 +3,8 @@ import enum
 import numpy as np
 import pandas as pd
 from itertools import zip_longest
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
-import geode.models as m
 
 def point_to_str(point: np.ndarray, precision=4):
     if hasattr(point, 'dtype') and point.dtype.names:
@@ -18,6 +17,7 @@ O_COLS = ['olat', 'olon']
 D_COLS = ['dlat', 'dlon']
 KEY_COLS = O_COLS + D_COLS
 
+
 def create_dist_index(origins, destinations):
     df = pd.DataFrame(origins, columns=O_COLS).assign(k=0).merge(
         pd.DataFrame(destinations, columns=D_COLS).assign(k=0),
@@ -26,6 +26,7 @@ def create_dist_index(origins, destinations):
     df.set_index(KEY_COLS, drop=True, inplace=True)
 
     return df
+
 
 def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
@@ -64,7 +65,7 @@ def marshall_to(cls: Any, data: Optional[Any]):
             for t in types:
                 try:
                     return marshall_to(t, data)
-                except Exception as err: 
+                except Exception as err:
                     last_err = UnionParseException(err)
 
             raise last_err
@@ -76,6 +77,7 @@ def marshall_to(cls: Any, data: Optional[Any]):
 
     return cls(data)
 
+
 def addresses_to_df(addresses):
     df = pd.concat(map(pd.io.json.json_normalize, map(dataclasses.asdict, addresses)))
     df.reset_index(drop=True, inplace=True)
@@ -83,6 +85,7 @@ def addresses_to_df(addresses):
     df['lon'] = df.point.apply(lambda x: x[1]).round(4)
     df.drop('point', axis=1, inplace=True)
     return df
+
 
 def first_or_none(arr):
     return next(iter(arr), None)

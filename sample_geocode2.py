@@ -1,18 +1,12 @@
-import aiohttp
-import sys
-import os
 import time
-import ujson
-import asyncio
-import uvloop
 import prettyprinter
 
 import geode.models as m
 from geode.dispatcher import Dispatcher
 from geode.utils import addresses_to_df
-from geode.config import yaml
 
 prettyprinter.install_extras(include=['dataclasses'])
+
 
 def main():
     client = Dispatcher()
@@ -31,9 +25,10 @@ def main():
     )
 
     t = time.time() - s
-    # convert to dataframe
+    # convert to DataFrame
     prettyprinter.pprint(addresses_to_df(res))
     print('Duration: %dms' % (t * 1000))
+
 
 if __name__ == '__main__':
     main()

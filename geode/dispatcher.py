@@ -1,14 +1,10 @@
 import aiohttp
 import asyncio
-import asyncpg
 import os
 import numpy as np
 import pandas as pd
 import ujson
-import uvloop
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
-from threading import Thread
 from scipy import spatial
 
 from geode import google, dist_metrics
@@ -24,6 +20,7 @@ TYPE_MAP = {
 
 
 MAX_METERS = 321869
+
 
 class AsyncDispatcher:
     cache = None

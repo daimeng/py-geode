@@ -1,7 +1,7 @@
 import abc
 import enum
 from dataclasses import dataclass
-from typing import Optional, List, Sequence
+from typing import Optional, Sequence
 
 from geode.models.common import Location, Address, GeoPoint
 
@@ -11,15 +11,17 @@ class Confidence(enum.Enum):
     PARTIAL = 1
     EXACT = 2
 
+
 class Precision(enum.Enum):
     APPROXIMATE = 0
     GEOMETRIC_CENTER = 1
     RANGE_INTERPOLATED = 2
     ROOFTOP = 3
 
-    # @staticmethodgit st
+    # @staticmethod
     # def from_address(address: Address):
     #     pass
+
 
 @dataclass
 class Result:

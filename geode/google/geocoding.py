@@ -1,7 +1,8 @@
-from typing import List, Dict, Any
+from typing import List
 
 import geode.models as m
 from .models import GoogleAddress, GoogleAddressComponent, GooglePoint, GoogleLocationType
+
 
 def map_from_address_components(components: List[GoogleAddressComponent]) -> m.Address:
     addr = m.Address()
@@ -28,8 +29,10 @@ def map_from_address_components(components: List[GoogleAddressComponent]) -> m.A
 
     return addr
 
+
 def latlng_to_point(latlng: GooglePoint) -> m.GeoPoint:
     return m.GeoPoint(lat=latlng.lat, lon=latlng.lng)
+
 
 def map_from_address(address: GoogleAddress) -> m.geoc.Result:
     addr = map_from_address_components(address.address_components)

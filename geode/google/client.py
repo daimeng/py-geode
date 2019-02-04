@@ -1,12 +1,8 @@
-import asyncio
-import functools
 import datetime
-import json
 import logging
 import numpy as np
-import pandas as pd
 from dataclasses import dataclass
-from typing import List, Union, Sequence, Optional
+from typing import Sequence
 
 import geode.models as m
 from geode.utils import marshall_to, point_to_str
@@ -16,6 +12,7 @@ from .distance_matrix import map_from_distance_matrix_response
 from .models import GoogleGeocodingResponse, GoogleDistanceMatrixResponse
 
 logger = logging.getLogger()
+
 
 @dataclass
 class Client(m.dist.Client, m.geoc.Client):
@@ -27,6 +24,7 @@ class Client(m.dist.Client, m.geoc.Client):
     key: str = ''
     area_max: int = 625
     factor_max: int = 380
+
     # client_id: str
     # secret: str
 

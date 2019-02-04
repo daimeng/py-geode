@@ -1,12 +1,14 @@
-import enum
 from dataclasses import dataclass
 from typing import NamedTuple, Union
+
 
 class GeoPoint(NamedTuple):
     lat: float
     lon: float
 
+
 Location = Union[GeoPoint, str]
+
 
 @dataclass
 class Address:

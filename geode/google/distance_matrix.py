@@ -5,6 +5,7 @@ import geode.models as m
 
 from .models import GoogleDistanceMatrixResponse, GoogleDistanceElement, GoogleDistanceElementStatus
 
+
 def map_from_elm(elm: GoogleDistanceElement) -> Optional[Tuple[int, int]]:
     if elm.status == GoogleDistanceElementStatus.OK:
         return (
@@ -12,6 +13,7 @@ def map_from_elm(elm: GoogleDistanceElement) -> Optional[Tuple[int, int]]:
             elm.duration.value
         )
     return None
+
 
 def map_from_distance_matrix_response(response: GoogleDistanceMatrixResponse) -> np.ndarray:
     dlen = len(response.destination_addresses)

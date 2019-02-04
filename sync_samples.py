@@ -1,10 +1,7 @@
-import sys
-import os
 import time
 import prettyprinter
 import numpy as np
 
-import geode.models as m
 from geode.dispatcher import Dispatcher
 
 prettyprinter.install_extras(include=['dataclasses'])
@@ -36,6 +33,7 @@ def main():
     t = time.time() - s
     prettyprinter.pprint(res)
     print('Duration: %dms' % (t * 1000))
+
 
 if __name__ == '__main__':
     main()

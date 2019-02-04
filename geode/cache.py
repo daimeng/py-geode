@@ -3,6 +3,7 @@ import pandas as pd
 from dataclasses import dataclass
 from geode.utils import KEY_COLS
 
+
 def CREATE_DISTANCE_TABLE(provider):
     return f'''
 CREATE TABLE IF NOT EXISTS distances_{provider} (
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS distances_{provider} (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS distances_{provider}_pkey ON distances_{provider} (precision int2_ops,olat numeric_ops,olon numeric_ops,dlat numeric_ops,dlon numeric_ops);
 '''
+
 
 def CREATE_DISTANCE_TABLE_TEMP(provider):
     return f'''
@@ -99,7 +101,7 @@ class PostgresCache:
         await conn.copy_records_to_table(
             f'distances_{provider}_tmp',
             records=distances.itertuples(index=False),
-            columns=[ x for x in distances ]
+            columns=[x for x in distances]
         )
 
         await conn.execute(MERGE_DISTANCES(provider))

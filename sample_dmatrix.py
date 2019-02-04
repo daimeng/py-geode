@@ -1,12 +1,11 @@
 import aiohttp
 import pandas as pd
-import numpy as np
 import sys
-import os
 import asyncio
 import uvloop
 
 from geode.dispatcher import AsyncDispatcher
+
 
 async def main():
     client = await AsyncDispatcher.init()
@@ -41,6 +40,7 @@ async def main():
         df.to_csv(append_file, mode='a', index=False, header=False, chunksize=1000)
     else:
         df.to_csv('test.csv', index=False, chunksize=1000)
+
 
 if __name__ == '__main__':
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())

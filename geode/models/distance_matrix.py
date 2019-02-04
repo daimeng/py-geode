@@ -3,18 +3,17 @@ import asyncio
 import numpy as np
 from functools import partial
 from dataclasses import dataclass
-from typing import Sequence, List, Optional, NamedTuple, Iterator
+from typing import NamedTuple, Iterator
 
-from geode.models.common import GeoPoint
 from geode.models import distance_matrix
-
 
 RECORD = [('meters', float), ('seconds', float)]
 
+
 @dataclass
 class Result:
-    origins: np.ndarray # echo
-    destinations: np.ndarray # echo
+    origins: np.ndarray  # echo
+    destinations: np.ndarray  # echo
     distances: np.ndarray
 
 
@@ -30,7 +29,8 @@ class Dedupe(object):
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
-    async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, dedupe = True, **kwargs) -> distance_matrix.Result:
+    async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, dedupe=True,
+                       **kwargs) -> distance_matrix.Result:
         if len(origins) == 0 or len(destinations) == 0:
             return distance_matrix.Result(distances=[])
 
@@ -53,6 +53,7 @@ class Dedupe(object):
             distances=dists.take(omap * np.size(dests, 0) + dmap)
         )
 
+
 def dedupe(fn):
     return Dedupe(fn)
 
@@ -64,7 +65,8 @@ class Partition(object):
     def __get__(self, instance, owner):
         return partial(self.__call__, instance)
 
-    async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, area_max: int = None, factor_max: int = None, **kwargs):
+    async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, area_max: int = None,
+                       factor_max: int = None, **kwargs):
         olen = len(origins)
         dlen = len(destinations)
 
@@ -79,7 +81,7 @@ class Partition(object):
         chunks = list(partition_matrix(dlen, olen, area_max, factor_max))
 
         subresults = await asyncio.gather(*[
-            self.fn(instance, origins=origins[y:y2+1], destinations=destinations[x:x2+1], *args, **kwargs)
+            self.fn(instance, origins=origins[y:y2 + 1], destinations=destinations[x:x2 + 1], *args, **kwargs)
             for x, y, x2, y2 in chunks])
 
         for subres, chunk in zip(subresults, chunks):
@@ -99,11 +101,13 @@ class Partition(object):
 def partition(fn):
     return Partition(fn)
 
+
 class MatrixIterBlock(NamedTuple):
     x: int
     y: int
     x2: int
     y2: int
+
 
 # area_max: x * y
 # factor_max: x + y

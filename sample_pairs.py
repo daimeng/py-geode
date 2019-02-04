@@ -1,6 +1,3 @@
-import aiohttp
-import sys
-import os
 import time
 import prettyprinter
 import numpy as np
@@ -9,6 +6,7 @@ from geode import METERS_PER_MILE
 from geode.dispatcher import Dispatcher
 
 prettyprinter.install_extras(include=['dataclasses'])
+
 
 def main():
     client = Dispatcher()
@@ -34,6 +32,7 @@ def main():
     t = time.time() - s
     prettyprinter.pprint(res)
     print('Duration: %dms' % (t * 1000))
+
 
 if __name__ == '__main__':
     main()

@@ -7,6 +7,7 @@ pyyaml
 asyncpg
 ujson
 uvloop
+usaddress
 
 # testing
 pytest

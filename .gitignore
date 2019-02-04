@@ -2,5 +2,6 @@ __pycache__
 *.pyc
 .mypy_cache/
 .vscode/
+.idea/
 tmp/
 .ipynb_checkpoints

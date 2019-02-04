@@ -1,6 +1,7 @@
 import enum
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
+
 
 # Common Models
 
@@ -18,6 +19,7 @@ class GoogleStatus(enum.Enum):
     REQUEST_DENIED = 5
     INVALID_REQUEST = 6
     UNKNOWN_ERROR = 7
+
 
 # Geocoding Models
 
@@ -86,8 +88,8 @@ class GoogleDistanceUnit:
 
 @dataclass
 class GoogleDistanceElement:
-    distance: GoogleDistanceUnit # meters
-    duration: GoogleDistanceUnit # seconds
+    distance: GoogleDistanceUnit  # meters
+    duration: GoogleDistanceUnit  # seconds
     status: GoogleDistanceElementStatus
 
 
