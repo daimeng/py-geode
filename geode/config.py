@@ -6,7 +6,7 @@ path_matcher = re.compile(r'\${([^}^{]+)\}')
 
 
 def path_constructor(loader, node):
-    '''Extract the matched value, expand env variable, and replace the match'''
+    """Extract the matched value, expand env variable, and replace the match"""
     value = node.value
     match = path_matcher.match(value)
     env_var = match.group()[2:-1]

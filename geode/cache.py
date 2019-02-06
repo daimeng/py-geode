@@ -65,9 +65,10 @@ class PostgresCache:
     user: str
     password: str
     database: str
+    port: int = 5432
 
     async def connection(self):
-        conn = await asyncpg.connect(user=self.user, password=self.password, database=self.database, host=self.host)
+        conn = await asyncpg.connect(user=self.user, password=self.password, database=self.database, host=self.host, port=self.port)
 
         # TODO: loop thru valid providers
         await conn.execute(CREATE_DISTANCE_TABLE('google'))

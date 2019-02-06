@@ -43,7 +43,7 @@ class AsyncDispatcher:
             for k, opts in config['providers'].items():
                 self.providers[k] = TYPE_MAP[opts['type_']].Client(**opts)
 
-        # intialize cache
+        # initialize cache
         if 'caching' in config:
             self.cache = PostgresCache(**config['caching'])
 
