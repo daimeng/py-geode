@@ -20,6 +20,7 @@ TYPE_MAP = {
 
 
 MAX_METERS = 500000
+MIN_METERS = 100
 
 
 class AsyncDispatcher:
@@ -102,7 +103,7 @@ class AsyncDispatcher:
         estimate_df['seconds'] = estimate_df.meters / 30
         estimate_df['source'] = 'gc_manhattan'
 
-        out_of_range = estimate_df.index[estimate_df.meters > max_meters]
+        out_of_range = estimate_df.index[(estimate_df.meters > max_meters) | (estimate_df.meters < MIN_METERS)]
 
         # wait on cache request
         cache_df = await cache_future
@@ -180,7 +181,7 @@ class AsyncDispatcher:
         estimate_df['seconds'] = estimate_df.meters / 30
         estimate_df['source'] = 'gc_manhattan'
 
-        out_of_range = estimate_df.index[estimate_df.meters > MAX_METERS]
+        out_of_range = estimate_df.index[(estimate_df.meters > max_meters) | (estimate_df.meters < MIN_METERS)]
 
         cache_df = await cache_future
         cache_df['source'] = 'google'
