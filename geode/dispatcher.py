@@ -19,10 +19,18 @@ TYPE_MAP = {
 }
 
 
-MAX_METERS = 321869
+MAX_METERS = 500000
 
 
 class AsyncDispatcher:
+    """
+    Dispatcher for generic requests.
+    Should handle:
+    - Registry and configuration of providers
+    - Rate limiting
+    - Cache logic
+    - High level fallback logic
+    """
     cache = None
     cache_conn = None
     providers = {}
@@ -193,6 +201,7 @@ class AsyncDispatcher:
 
 
 class Dispatcher:
+    """Proxy class for easier use in sync environments."""
     cache = None
     cache_conn = None
     providers = {}
