@@ -210,29 +210,30 @@ class Dispatcher:
     loop = None
 
     def __init__(self, config=None):
-        self.loop = asyncio.new_event_loop()
         self.dispatcher = self.run(AsyncDispatcher.init(config))
 
     def run(self, coro):
+        self.loop = asyncio.new_event_loop()
         future = ThreadPoolExecutor().submit(self.loop.run_until_complete, coro)
-
-        return future.result()
+        res = future.result()
+        self.loop.close()
+        return res
 
     # TODO: find way to consolidate these wrappers
     async def distance_matrix_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.distance_matrix(*args, **kwargs, session=session)
 
     async def distance_pairs_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.distance_pairs(*args, **kwargs, session=session)
 
     async def batch_geocode_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.batch_geocode(*args, **kwargs, session=session)
 
     async def geocode_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.throttled_geocode(*args, **kwargs, session=session)
 
     def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None):
