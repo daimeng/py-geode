@@ -213,11 +213,8 @@ class Dispatcher:
         self.dispatcher = self.run(AsyncDispatcher.init(config))
 
     def run(self, coro):
-        self.loop = asyncio.new_event_loop()
-        future = ThreadPoolExecutor().submit(self.loop.run_until_complete, coro)
-        res = future.result()
-        self.loop.close()
-        return res
+        future = ThreadPoolExecutor().submit(asyncio.run, coro)
+        return future.result()
 
     # TODO: find way to consolidate these wrappers
     async def distance_matrix_with_session(self, *args, **kwargs):
