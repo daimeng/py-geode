@@ -97,8 +97,8 @@ class AsyncDispatcher:
 
         estimates = spatial.distance.cdist(
             origins,
-            destinations,
-            dist_metrics.gc_manhattan)
+            destinations
+        ) * dist_metrics.R_EARTH
 
         estimate_df = pd.DataFrame(estimates.ravel(), columns=['meters'], index=idx.index)
         estimate_df['seconds'] = estimate_df.meters / 30
@@ -176,7 +176,7 @@ class AsyncDispatcher:
         estimates = spatial.distance.cdist(
             origins,
             destinations
-        )
+        ) * dist_metrics.R_EARTH
 
         estimate_df = pd.DataFrame(estimates.diagonal().ravel(), columns=['meters'], index=idx.index)
         estimate_df['seconds'] = estimate_df.meters / 30
