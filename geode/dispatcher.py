@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 import ujson
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from scipy import spatial
 
@@ -57,7 +58,7 @@ class AsyncDispatcher:
             self.cache = PostgresCache(**config['caching'])
 
         # tmp solution
-        self.semaphore = asyncio.BoundedSemaphore(200)
+        self.semaphore = threading.BoundedSemaphore(200)
 
     @classmethod
     async def init(cls, config=None):
@@ -72,7 +73,7 @@ class AsyncDispatcher:
     async def throttled_geocode(self, address, session=None, provider=None):
         client = self.providers.get(provider)
 
-        async with self.semaphore:
+        with self.semaphore:
             return await client.geocode(address, session=session)
 
     async def batch_geocode(self, locations, session=None, provider=None):
@@ -95,9 +96,9 @@ class AsyncDispatcher:
                 origins, destinations, provider=provider))
 
         estimates = spatial.distance.cdist(
-            origins,
-            destinations,
-            dist_metrics.gc_manhattan)
+            np.radians(origins),
+            np.radians(destinations)
+        ) * dist_metrics.R_EARTH
 
         estimate_df = pd.DataFrame(estimates.ravel(), columns=['meters'], index=idx.index)
         estimate_df['seconds'] = estimate_df.meters / 30
@@ -126,7 +127,7 @@ class AsyncDispatcher:
     async def throttled_distance_matrix(self, origins, destinations, session=None, provider=None):
         client = self.providers.get(provider)
 
-        async with self.semaphore:
+        with self.semaphore:
             return await client.distance_matrix(origins, destinations, session=session)
 
     async def distance_rows(self, missing, session=None, provider=None):
@@ -173,9 +174,9 @@ class AsyncDispatcher:
                 origins, destinations, provider=provider, pair=True))
 
         estimates = spatial.distance.cdist(
-            origins,
-            destinations,
-            dist_metrics.gc_manhattan)
+            np.radians(origins),
+            np.radians(destinations)
+        ) * dist_metrics.R_EARTH
 
         estimate_df = pd.DataFrame(estimates.diagonal().ravel(), columns=['meters'], index=idx.index)
         estimate_df['seconds'] = estimate_df.meters / 30
@@ -210,29 +211,27 @@ class Dispatcher:
     loop = None
 
     def __init__(self, config=None):
-        self.loop = asyncio.new_event_loop()
         self.dispatcher = self.run(AsyncDispatcher.init(config))
 
     def run(self, coro):
-        future = ThreadPoolExecutor().submit(self.loop.run_until_complete, coro)
-
+        future = ThreadPoolExecutor().submit(asyncio.run, coro)
         return future.result()
 
     # TODO: find way to consolidate these wrappers
     async def distance_matrix_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.distance_matrix(*args, **kwargs, session=session)
 
     async def distance_pairs_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.distance_pairs(*args, **kwargs, session=session)
 
     async def batch_geocode_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.batch_geocode(*args, **kwargs, session=session)
 
     async def geocode_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps, loop=self.loop) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.throttled_geocode(*args, **kwargs, session=session)
 
     def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None):
