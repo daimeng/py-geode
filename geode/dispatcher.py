@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 import ujson
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from scipy import spatial
 
@@ -57,7 +58,7 @@ class AsyncDispatcher:
             self.cache = PostgresCache(**config['caching'])
 
         # tmp solution
-        self.semaphore = asyncio.BoundedSemaphore(200)
+        self.semaphore = threading.BoundedSemaphore(200)
 
     @classmethod
     async def init(cls, config=None):
@@ -72,7 +73,7 @@ class AsyncDispatcher:
     async def throttled_geocode(self, address, session=None, provider=None):
         client = self.providers.get(provider)
 
-        async with self.semaphore:
+        with self.semaphore:
             return await client.geocode(address, session=session)
 
     async def batch_geocode(self, locations, session=None, provider=None):
@@ -126,7 +127,7 @@ class AsyncDispatcher:
     async def throttled_distance_matrix(self, origins, destinations, session=None, provider=None):
         client = self.providers.get(provider)
 
-        async with self.semaphore:
+        with self.semaphore:
             return await client.distance_matrix(origins, destinations, session=session)
 
     async def distance_rows(self, missing, session=None, provider=None):

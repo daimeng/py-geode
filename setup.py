@@ -4,7 +4,7 @@ from distutils.core import setup
 from setuptools import find_packages
 
 setup(name='geode',
-    version='0.3.4',
+    version='0.3.5',
     description='Geode',
     author='Test',
     author_email='daimengchen@gmail.com',
