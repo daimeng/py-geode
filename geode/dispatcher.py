@@ -96,8 +96,8 @@ class AsyncDispatcher:
                 origins, destinations, provider=provider))
 
         estimates = spatial.distance.cdist(
-            origins,
-            destinations
+            np.radians(origins),
+            np.radians(destinations)
         ) * dist_metrics.R_EARTH
 
         estimate_df = pd.DataFrame(estimates.ravel(), columns=['meters'], index=idx.index)
@@ -174,8 +174,8 @@ class AsyncDispatcher:
                 origins, destinations, provider=provider, pair=True))
 
         estimates = spatial.distance.cdist(
-            origins,
-            destinations
+            np.radians(origins),
+            np.radians(destinations)
         ) * dist_metrics.R_EARTH
 
         estimate_df = pd.DataFrame(estimates.diagonal().ravel(), columns=['meters'], index=idx.index)
