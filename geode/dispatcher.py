@@ -82,12 +82,12 @@ class AsyncDispatcher:
             for loc in locations]
         )))
 
-    async def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, sem=None, session=None, provider=None):
+    async def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, sem=None, session=None, provider=None, return_inverse=False):
         sem = sem or asyncio.BoundedSemaphore(MAX_REQUESTS)
 
         # prepare parameters and indices
-        origins = np.unique(origins.round(4), axis=0)
-        destinations = np.unique(destinations.round(4), axis=0)
+        origins, oinv = np.unique(origins.round(4), axis=0, return_inverse=True)
+        destinations, dinv = np.unique(destinations.round(4), axis=0, return_inverse=True)
 
         idx = create_dist_index(origins, destinations)
 
@@ -118,10 +118,13 @@ class AsyncDispatcher:
 
         merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
 
-        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].sort_index()
+        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].reindex(index=idx.index, copy=False)
 
         await self.cache.set_distances(
             origins, destinations, res_df, provider=provider)
+
+        if return_inverse:
+            return merged_df, oinv.reshape(oinv.size, -1) * np.size(destinations, 0) + dinv
 
         return merged_df
 
@@ -238,9 +241,9 @@ class Dispatcher:
         async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.throttled_geocode(*args, **kwargs, session=session)
 
-    def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None):
+    def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None, return_inverse=False):
         return self.run(
-            self.distance_matrix_with_session(origins, destinations, max_meters, provider=provider)
+            self.distance_matrix_with_session(origins, destinations, max_meters, provider=provider, return_inverse=return_inverse)
         )
 
     def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, provider=None):

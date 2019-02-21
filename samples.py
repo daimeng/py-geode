@@ -5,11 +5,13 @@ import asyncio
 import uvloop
 import prettyprinter
 import numpy as np
+import pandas as pd
 
 from geode.dispatcher import AsyncDispatcher
 
 prettyprinter.install_extras(include=['dataclasses'])
 
+pd.set_option('display.float_format', '{:.4f}'.format)
 
 async def main():
     client = await AsyncDispatcher.init()

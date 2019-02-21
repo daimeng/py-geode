@@ -26,8 +26,8 @@ def main():
     s = time.time()
 
     res = client.distance_matrix(
-        origins=np.random.rand(3, 2) * [20, 20] + [25, -100],
-        destinations=np.random.rand(4, 2) * [20, 20] + [25, -100],
+        origins=np.random.rand(10, 2) * [20, 20] + [25, -90],
+        destinations=np.random.rand(10, 2) * [20, 20] + [25, -90],
         provider='google')
 
     t = time.time() - s
