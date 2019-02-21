@@ -4,7 +4,6 @@ import os
 import numpy as np
 import pandas as pd
 import ujson
-import threading
 from concurrent.futures import ThreadPoolExecutor
 from scipy import spatial
 
@@ -22,7 +21,7 @@ TYPE_MAP = {
 
 MAX_METERS = 500000
 MIN_METERS = 100
-
+MAX_REQUESTS = 100
 
 class AsyncDispatcher:
     """
@@ -57,9 +56,6 @@ class AsyncDispatcher:
         if 'caching' in config:
             self.cache = PostgresCache(**config['caching'])
 
-        # tmp solution
-        self.semaphore = threading.BoundedSemaphore(200)
-
     @classmethod
     async def init(cls, config=None):
         instance = cls(config)
@@ -67,23 +63,28 @@ class AsyncDispatcher:
             instance.cache_conn = await instance.cache.connection()
         return instance
 
-    async def geocode(self, address, session=None, provider=None):
-        return await self.throttled_geocode(address, session=session, provider=provider)
+    async def geocode(self, address, sem=None, session=None, provider=None):
+        sem = sem or asyncio.BoundedSemaphore(MAX_REQUESTS)
 
-    async def throttled_geocode(self, address, session=None, provider=None):
+        return await self.throttled_geocode(address, sem, session=session, provider=provider)
+
+    async def throttled_geocode(self, address, sem, session=None, provider=None):
         client = self.providers.get(provider)
 
-        with self.semaphore:
+        with sem:
             return await client.geocode(address, session=session)
 
-    async def batch_geocode(self, locations, session=None, provider=None):
+    async def batch_geocode(self, locations, sem=None, session=None, provider=None):
+        sem = sem or asyncio.BoundedSemaphore(MAX_REQUESTS)
         # TODO: check here if client has batch
         return list(map(first_or_none, await asyncio.gather(*[
-            self.throttled_geocode(loc, session=session, provider=provider)
+            self.throttled_geocode(loc, sem, session=session, provider=provider)
             for loc in locations]
         )))
 
-    async def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, session=None, provider=None):
+    async def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, sem=None, session=None, provider=None):
+        sem = sem or asyncio.BoundedSemaphore(MAX_REQUESTS)
+
         # prepare parameters and indices
         origins = np.unique(origins.round(4), axis=0)
         destinations = np.unique(destinations.round(4), axis=0)
@@ -113,7 +114,7 @@ class AsyncDispatcher:
         missing = pd.DataFrame(
             index=idx.index.difference(out_of_range).difference(cache_df.index))
 
-        res_df = await self.distance_rows(missing, session=session, provider=provider)
+        res_df = await self.distance_rows(missing, sem, session=session, provider=provider)
 
         merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
 
@@ -124,17 +125,18 @@ class AsyncDispatcher:
 
         return merged_df
 
-    async def throttled_distance_matrix(self, origins, destinations, session=None, provider=None):
+    async def throttled_distance_matrix(self, origins, destinations, sem, session=None, provider=None):
         client = self.providers.get(provider)
 
-        with self.semaphore:
+        async with sem:
             return await client.distance_matrix(origins, destinations, session=session)
 
-    async def distance_rows(self, missing, session=None, provider=None):
+    async def distance_rows(self, missing, sem, session=None, provider=None):
         res = await asyncio.gather(*[
             self.throttled_distance_matrix(
                 origins=[o],
                 destinations=ds.loc[o].index.values,
+                sem=sem,
                 session=session,
                 provider=provider
             ) for o, ds in missing.groupby(level=[0,1])
@@ -163,7 +165,9 @@ class AsyncDispatcher:
 
         return res
 
-    async def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, session=None, provider=None):
+    async def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, sem=None, session=None, provider=None):
+        sem = sem or asyncio.BoundedSemaphore(MAX_REQUESTS)
+
         origins = origins.round(4)
         destinations = destinations.round(4)
 
@@ -190,7 +194,7 @@ class AsyncDispatcher:
         missing = pd.DataFrame(
             index=idx.index.difference(out_of_range).difference(cache_df.index))
 
-        res_df = await self.distance_rows(missing, session=session, provider=provider)
+        res_df = await self.distance_rows(missing, sem, session=session, provider=provider)
 
         merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
 

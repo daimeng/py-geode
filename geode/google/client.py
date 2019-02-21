@@ -29,8 +29,6 @@ class Client(m.distance_matrix.Client, m.geocoding.Client):
     # secret: str
 
     async def request(self, path, params, session=None):
-        logger.info(f'sent request at {(datetime.datetime.now())}')
-
         return await session.get(
             self.base_url + path,
             params=dict(
