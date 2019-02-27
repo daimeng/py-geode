@@ -16,9 +16,10 @@ class GoogleStatus(enum.Enum):
     ZERO_RESULTS = 2
     OVER_DAILY_LIMIT = 3
     OVER_QUERY_LIMIT = 4
-    REQUEST_DENIED = 5
-    INVALID_REQUEST = 6
-    UNKNOWN_ERROR = 7
+    MAX_ELEMENTS_EXCEEDED = 5
+    REQUEST_DENIED = 6
+    INVALID_REQUEST = 7
+    UNKNOWN_ERROR = 8
 
 
 # Geocoding Models

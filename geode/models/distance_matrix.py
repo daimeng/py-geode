@@ -73,7 +73,8 @@ class Partition(object):
         if olen == 0 or dlen == 0:
             return await self.fn(instance, origins=origins, destinations=destinations, *args, **kwargs)
 
-        results = np.zeros((olen, dlen), dtype=distance_matrix.RECORD)
+        # initialize to nans for failure case data
+        results = np.full((olen, dlen), np.nan, dtype=distance_matrix.RECORD)
 
         area_max = area_max or instance.area_max
         factor_max = factor_max or instance.factor_max
@@ -90,7 +91,8 @@ class Partition(object):
             xs = x2 - x + 1
             ys = y2 - y + 1
 
-            results[y:ys, x:xs] = subres.distances
+            if subres.distances.size:
+                results[y:ys, x:xs] = subres.distances
 
         return distance_matrix.Result(
             origins=origins,
