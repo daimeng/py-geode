@@ -103,3 +103,4 @@ class GoogleDistanceMatrixResponse:
     destination_addresses: List[str]
     origin_addresses: List[str]
     rows: List[GoogleDistanceRow]
+    status: GoogleStatus
