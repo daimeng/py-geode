@@ -88,11 +88,9 @@ class Partition(object):
 
         for subres, chunk in zip(subresults, chunks):
             x, y, x2, y2 = chunk
-            xs = x2 - x + 1
-            ys = y2 - y + 1
 
             if subres.distances.size:
-                results[y:ys, x:xs] = subres.distances
+                results[y:y2+1, x:x2+1] = subres.distances
 
         return distance_matrix.Result(
             origins=origins,
