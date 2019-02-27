@@ -147,15 +147,29 @@ class AsyncDispatcher:
             return await client.distance_matrix(origins, destinations, session=session)
 
     async def distance_rows(self, missing, sem, session=None, provider=None):
-        res = await asyncio.gather(*[
-            self.throttled_distance_matrix(
-                origins=[o],
-                destinations=ds.loc[o].index.values,
-                sem=sem,
-                session=session,
-                provider=provider
-            ) for o, ds in missing.groupby(level=[0,1])
-        ])
+        odim = [0, 1]
+        ddim = [2, 3]
+        if missing.groupby(level=odim).ngroups < missing.groupby(level=ddim).ngroups:
+            res = await asyncio.gather(*[
+                self.throttled_distance_matrix(
+                    origins=[o],
+                    destinations=ds.index.to_frame(index=False).values[:, ddim],
+                    sem=sem,
+                    session=session,
+                    provider=provider
+                ) for o, ds in missing.groupby(level=odim)
+            ])
+        else:
+            res = await asyncio.gather(*[
+                self.throttled_distance_matrix(
+                    origins=ds.index.to_frame(index=False).values[:, odim],
+                    destinations=[o],
+                    sem=sem,
+                    session=session,
+                    provider=provider
+                ) for o, ds in missing.groupby(level=ddim)
+            ])
+
 
         res_df = None
         res_flat = [row.distances.ravel() for row in res if len(row.distances)]
