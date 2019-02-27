@@ -223,3 +223,5 @@ def test_main():
         destinations=DESTS,
         provider='google'
     )
+
+    print(res)
