@@ -8,6 +8,7 @@ asyncpg
 ujson
 uvloop
 usaddress
+tenacity
 
 # testing
 pytest
