@@ -73,7 +73,7 @@ class Partition(object):
         if olen == 0 or dlen == 0:
             return await self.fn(instance, origins=origins, destinations=destinations, *args, **kwargs)
 
-        results = np.recarray((olen, dlen), dtype=distance_matrix.RECORD)
+        results = np.zeros((olen, dlen), dtype=distance_matrix.RECORD)
 
         area_max = area_max or instance.area_max
         factor_max = factor_max or instance.factor_max
@@ -82,7 +82,8 @@ class Partition(object):
 
         subresults = await asyncio.gather(*[
             self.fn(instance, origins=origins[y:y2 + 1], destinations=destinations[x:x2 + 1], *args, **kwargs)
-            for x, y, x2, y2 in chunks])
+            for x, y, x2, y2 in chunks
+        ])
 
         for subres, chunk in zip(subresults, chunks):
             x, y, x2, y2 = chunk

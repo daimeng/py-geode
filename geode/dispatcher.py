@@ -92,9 +92,10 @@ class AsyncDispatcher:
         idx = create_dist_index(origins, destinations)
 
         # kick off cache request
-        cache_future = asyncio.ensure_future(
-            self.cache.get_distances(
-                origins, destinations, provider=provider))
+        if self.cache:
+            cache_future = asyncio.ensure_future(
+                self.cache.get_distances(
+                    origins, destinations, provider=provider))
 
         estimates = spatial.distance.cdist(
             np.radians(origins),
@@ -108,20 +109,31 @@ class AsyncDispatcher:
         out_of_range = estimate_df.index[(estimate_df.meters > max_meters) | (estimate_df.meters < MIN_METERS)]
 
         # wait on cache request
-        cache_df = await cache_future
-        cache_df['source'] = 'google'
+        if self.cache:
+            cache_df = await cache_future
+            cache_df['source'] = 'google'
 
-        missing = pd.DataFrame(
-            index=idx.index.difference(out_of_range).difference(cache_df.index))
+            missing = pd.DataFrame(
+                index=idx.index.difference(out_of_range).difference(cache_df.index)
+            )
+        else:
+            missing = pd.DataFrame(
+                index=idx.index.difference(out_of_range)
+            )
 
         res_df = await self.distance_rows(missing, sem, session=session, provider=provider)
 
-        merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
+        if self.cache:
+            merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
+        else:
+            merged_df = pd.concat([estimate_df, res_df], sort=False)
 
         merged_df = merged_df[~merged_df.index.duplicated(keep='last')].reindex(index=idx.index, copy=False)
 
-        await self.cache.set_distances(
-            origins, destinations, res_df, provider=provider)
+        if self.cache:
+            await self.cache.set_distances(
+                origins, destinations, res_df, provider=provider
+            )
 
         if return_inverse:
             return merged_df, oinv.reshape(oinv.size, -1) * np.size(destinations, 0) + dinv
@@ -176,9 +188,10 @@ class AsyncDispatcher:
 
         idx = pd.DataFrame(np.hstack((origins, destinations)), columns=KEY_COLS).set_index(KEY_COLS)
 
-        cache_future = asyncio.ensure_future(
-            self.cache.get_distances(
-                origins, destinations, provider=provider, pair=True))
+        if self.cache:
+            cache_future = asyncio.ensure_future(
+                self.cache.get_distances(
+                    origins, destinations, provider=provider, pair=True))
 
         estimates = spatial.distance.cdist(
             np.radians(origins),
@@ -191,20 +204,30 @@ class AsyncDispatcher:
 
         out_of_range = estimate_df.index[(estimate_df.meters > max_meters) | (estimate_df.meters < MIN_METERS)]
 
-        cache_df = await cache_future
-        cache_df['source'] = 'google'
+        if self.cache:
+            cache_df = await cache_future
+            cache_df['source'] = 'google'
 
-        missing = pd.DataFrame(
-            index=idx.index.difference(out_of_range).difference(cache_df.index))
+            missing = pd.DataFrame(
+                index=idx.index.difference(out_of_range).difference(cache_df.index)
+            )
+        else:
+            missing = pd.DataFrame(
+                index=idx.index.difference(out_of_range)
+            )
 
         res_df = await self.distance_rows(missing, sem, session=session, provider=provider)
 
-        merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
+        if self.cache:
+            merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
+        else:
+            merged_df = pd.concat([estimate_df, res_df], sort=False)
 
         merged_df = merged_df[~merged_df.index.duplicated(keep='last')].sort_index()
 
-        await self.cache.set_distances(
-            origins, destinations, res_df, provider=provider)
+        if self.cache:
+            await self.cache.set_distances(
+                origins, destinations, res_df, provider=provider)
 
         return merged_df
 
