@@ -227,8 +227,8 @@ def test_main(mock_server):
         provider='google',
         max_meters=np.Infinity
     )
-
-    print(res)
+    assert len(res) == 394
+    assert res.isnull().sum().sum() == 0
 
 
 LOCS = np.array(
@@ -279,4 +279,5 @@ def test_square(mock_server):
         max_meters=np.Infinity
     )
 
-    print(res)
+    assert len(res) == 2500
+    assert res.isnull().sum().sum() == 0

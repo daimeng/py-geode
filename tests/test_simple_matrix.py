@@ -224,5 +224,5 @@ def test_main(mock_server):
         destinations=DESTS,
         provider='google'
     )
-
-    print(res)
+    assert len(res) == 1975
+    assert res.isnull().sum().sum() == 0
