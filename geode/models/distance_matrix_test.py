@@ -2,6 +2,7 @@ import numpy as np
 from .distance_matrix import partition_matrix, MatrixIterBlock
 
 
+# show matrix iteration order
 def show_matrix(y, x, blocks):
     mat = np.full((x, y), fill_value=-1, dtype=np.int)
     for i, block in enumerate(blocks):
