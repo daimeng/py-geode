@@ -7,12 +7,12 @@ import time
 class MockServer:
     def __init__(self):
         self.server = subprocess.Popen(
-            ['moogle'], shell=True,
+            ['moogle', '-seclimit', '100', '-elmlimit', '1000'],
             # stdout=subprocess.PIPE,
             # stderr=subprocess.DEVNULL
         )
         # should be very quick to start up
-        time.sleep(2)
+        time.sleep(1)
         self.http = urllib3.PoolManager()
 
     def reset(self):
