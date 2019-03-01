@@ -8,8 +8,8 @@ class MockServer:
     def __init__(self):
         self.server = subprocess.Popen(
             ['moogle'], shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL
+            # stdout=subprocess.PIPE,
+            # stderr=subprocess.DEVNULL
         )
         # should be very quick to start up
         time.sleep(2)

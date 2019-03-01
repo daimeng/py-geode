@@ -4,8 +4,10 @@ import os
 import numpy as np
 import pandas as pd
 import ujson
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from scipy import spatial
+from typing import Dict, Any
 
 from geode import google, dist_metrics
 from geode.config import yaml
@@ -23,6 +25,7 @@ MAX_METERS = 500000
 MIN_METERS = 100
 MAX_REQUESTS = 20
 
+
 class AsyncDispatcher:
     """
     Dispatcher for generic requests.
@@ -34,7 +37,7 @@ class AsyncDispatcher:
     """
     cache = None
     cache_conn = None
-    providers = {}
+    providers: Dict[str, Any] = {}
     semaphore = None
 
     def __init__(self, config=None):
@@ -250,15 +253,16 @@ class Dispatcher:
     """Proxy class for easier use in sync environments."""
     cache = None
     cache_conn = None
-    providers = {}
+    providers: Dict[str, Any] = {}
     dispatcher = None
-    loop = None
+    exc = None
 
     def __init__(self, config=None):
+        self.exc = ThreadPoolExecutor(max_workers=1)
         self.dispatcher = self.run(AsyncDispatcher.init(config))
 
     def run(self, coro):
-        future = ThreadPoolExecutor().submit(asyncio.run, coro)
+        future = self.exc.submit(asyncio.run, coro)
         return future.result()
 
     # TODO: find way to consolidate these wrappers
@@ -299,5 +303,4 @@ class Dispatcher:
         )
 
     def __del__(self):
-        if self.loop:
-            self.loop.stop()
+        self.exc.shutdown()
