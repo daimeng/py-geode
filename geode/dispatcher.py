@@ -276,7 +276,7 @@ class Dispatcher:
 
     async def geocode_with_session(self, *args, **kwargs):
         async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
-            return await self.dispatcher.throttled_geocode(*args, **kwargs, session=session)
+            return await self.dispatcher.geocode(*args, **kwargs, session=session)
 
     def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None, return_inverse=False):
         return self.run(
