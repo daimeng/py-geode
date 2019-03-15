@@ -21,7 +21,7 @@ TYPE_MAP = {
 
 MAX_METERS = 500000
 MIN_METERS = 100
-MAX_REQUESTS = 100
+MAX_REQUESTS = 20
 
 class AsyncDispatcher:
     """
@@ -71,7 +71,7 @@ class AsyncDispatcher:
     async def throttled_geocode(self, address, sem, session=None, provider=None):
         client = self.providers.get(provider)
 
-        with sem:
+        async with sem:
             return await client.geocode(address, session=session)
 
     async def batch_geocode(self, locations, sem=None, session=None, provider=None):
