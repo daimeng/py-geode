@@ -1,9 +1,7 @@
-import datetime
 import logging
 import numpy as np
-from dataclasses import dataclass
 from typing import Sequence
-from tenacity import retry, wait_exponential, retry_if_result
+from tenacity import retry, wait_random_exponential, retry_if_result
 
 import geode.models as m
 from geode.utils import marshall_to, point_to_str
@@ -18,14 +16,15 @@ def is_over_query_limit(x):
     return x.status == GoogleStatus.OVER_QUERY_LIMIT or x.status == GoogleStatus.MAX_ELEMENTS_EXCEEDED
 
 
+# random wait alleviates retry bursts
 GEOCODE_RETRY = retry(
-    wait=wait_exponential(multiplier=0.1, min=0.1, max=2),
-    retry=retry_if_result(is_over_query_limit)
+    wait=wait_random_exponential(multiplier=0.1, min=0.1, max=2, exp_base=1.5),
+    retry=retry_if_result(is_over_query_limit),
 )
 
 MATRIX_RETRY = retry(
-    wait=wait_exponential(multiplier=0.1, min=0.1, max=2),
-    retry=retry_if_result(is_over_query_limit)
+    wait=wait_random_exponential(multiplier=0.1, min=0.1, max=2, exp_base=1.5),
+    retry=retry_if_result(is_over_query_limit),
 )
 
 

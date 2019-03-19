@@ -22,42 +22,6 @@ class Client(abc.ABC):
         pass
 
 
-class Dedupe(object):
-    def __init__(self, fn):
-        self.fn = fn
-
-    def __get__(self, instance, owner):
-        return partial(self.__call__, instance)
-
-    async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, dedupe=True,
-                       **kwargs) -> distance_matrix.Result:
-        if len(origins) == 0 or len(destinations) == 0:
-            return distance_matrix.Result(distances=[])
-
-        if not dedupe:
-            return await self.fn(instance, origins, destinations, *args, **kwargs)
-
-        origs, omap = np.unique(origins, axis=0, return_inverse=True)
-        dests, dmap = np.unique(destinations, axis=0, return_inverse=True)
-
-        # 1d to 2d
-        omap = omap.reshape(omap.size, -1)
-        dmap = dmap.reshape(-1, dmap.size)
-
-        # retrieve distances
-        deduped_res = await self.fn(instance, origs, dests, *args, **kwargs)
-        dists = deduped_res.distances.ravel()
-
-        # apply inverses and de-unique
-        return distance_matrix.Result(
-            distances=dists.take(omap * np.size(dests, 0) + dmap)
-        )
-
-
-def dedupe(fn):
-    return Dedupe(fn)
-
-
 class Partition(object):
     def __init__(self, fn):
         self.fn = fn
@@ -110,9 +74,14 @@ class MatrixIterBlock(NamedTuple):
     y2: int
 
 
-# area_max: x * y
-# factor_max: x + y
 def partition_matrix(xlen: int, ylen: int, area_max: int, factor_max: int) -> Iterator[MatrixIterBlock]:
+    """
+    :param xlen: x length of matrix
+    :param ylen: y length of matrix
+    :param area_max: x * y <= area_max
+    :param factor_max: x + y <= factor_max
+    :return: Iterator for sub-matrix rectangles, northwest and southeast corners
+    """
     xmax = min(xlen, area_max, factor_max - 1)
     ymax = min(ylen, area_max // xmax, factor_max - xmax)
 
