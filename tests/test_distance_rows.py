@@ -39,6 +39,9 @@ async def test_full(mock_server, test_client_config):
     mock_server.reset()
     client = await AsyncDispatcher.init(test_client_config)
 
+    # [0 1 2
+    #  3 4 5
+    #  6 7 8]
     idx = create_dist_index(ORIGS, DESTS)
 
     async with aiohttp.ClientSession() as session:
@@ -71,7 +74,10 @@ async def test_odd(mock_server, test_client_config):
 
     idx = create_dist_index(ORIGS, DESTS)
 
-    # take even rows only
+    # [0 _ 2
+    #  _ 4 _
+    #  6 _ 8]
+    # take even indices only
     missing = idx.iloc[range(0, len(idx), 2)]
 
     async with aiohttp.ClientSession() as session:
@@ -101,6 +107,9 @@ async def test_thin(mock_server, test_client_config):
     mock_server.reset()
     client = await AsyncDispatcher.init(test_client_config)
 
+    # [_ 1 2
+    #  _ 4 5
+    #  _ 7 8]
     # take only last 2 destinations, 3 x 2 query
     idx = create_dist_index(ORIGS, DESTS[[1, 2], :])
     expected = [
@@ -138,7 +147,17 @@ async def test_jumbled(mock_server, test_client_config):
     jumble = [8, 0, 7, 1, 6, 2, 5, 3]  # omit 4
     idx = create_dist_index(ORIGS, DESTS).take(jumble)
 
-    # should be ordered origin-major, grouped by first incidence each origin value
+
+    # should be ordered origin-major
+    # grouped by first occurrence each origin value
+    #
+    # [0 1 2
+    #  3 4 5
+    #  6 7 8]
+    # 
+    # 8 (row3) is first group
+    # 0 (row1) is second group
+    # 5 (row2) is last group
     expected = [
         8, 7, 6,
         0, 1, 2,
