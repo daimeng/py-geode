@@ -43,6 +43,8 @@ def test_main(mock_server, test_client_config):
         ], names=['olat', 'olon', 'dlat', 'dlon'])
     )
 
+    # double check these values if they should need to change.
+    # should be able to eyeball if they look reasonable.
     expected_meters = [
         0.,
         444779.,
@@ -66,6 +68,7 @@ def test_main(mock_server, test_client_config):
     )
 
     # restore index with inverse key
+    # should be origin-major traversal
     pd.testing.assert_index_equal(
         res.take(inv.flat).index,
         pd.MultiIndex.from_tuples([
