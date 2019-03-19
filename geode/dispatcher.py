@@ -97,7 +97,9 @@ class AsyncDispatcher:
         if self.cache:
             cache_future = asyncio.ensure_future(
                 self.cache.get_distances(
-                    origins, destinations, provider=provider))
+                    origins, destinations, provider=provider
+                )
+            )
 
         estimates = spatial.distance.cdist(
             np.radians(origins),
@@ -150,8 +152,12 @@ class AsyncDispatcher:
     async def distance_rows(self, missing, sem, session=None, provider=None):
         odim = [0, 1]
         ddim = [2, 3]
-        if missing.groupby(level=odim).ngroups <= missing.groupby(level=ddim).ngroups:
-            idx = missing.groupby(level=odim, sort=False)
+        ogroups = missing.groupby(level=odim, sort=False)
+        dgroups = missing.groupby(level=ddim, sort=False)
+
+        if ogroups.ngroups <= dgroups.ngroups:
+            # fewer origins, iterate origin-major
+            idx = ogroups
             res = await asyncio.gather(*[
                 self.throttled_distance_matrix(
                     origins=[o],
@@ -162,7 +168,8 @@ class AsyncDispatcher:
                 ) for o, ds in idx
             ])
         else:
-            idx = missing.groupby(level=ddim, sort=False)
+            # fewer destinations, iterate destination-major
+            idx = dgroups
             res = await asyncio.gather(*[
                 self.throttled_distance_matrix(
                     origins=ds.index.to_frame(index=False).values[:, odim],
@@ -209,7 +216,9 @@ class AsyncDispatcher:
         if self.cache:
             cache_future = asyncio.ensure_future(
                 self.cache.get_distances(
-                    origins, destinations, provider=provider, pair=True))
+                    origins, destinations, provider=provider, pair=True
+                )
+            )
 
         estimates = spatial.distance.cdist(
             np.radians(origins),
