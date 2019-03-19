@@ -256,7 +256,6 @@ class Dispatcher:
     cache_conn = None
     providers: Dict[str, Any] = {}
     dispatcher = None
-    exc = None
 
     def __init__(self, config=None):
         self.dispatcher = self.run(AsyncDispatcher.init(config))

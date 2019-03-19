@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 from typing import Sequence
-from tenacity import retry, wait_random_exponential, retry_if_result, stop_after_delay
+from tenacity import retry, wait_random_exponential, retry_if_result
 
 import geode.models as m
 from geode.utils import marshall_to, point_to_str
@@ -19,13 +19,11 @@ def is_over_query_limit(x):
 GEOCODE_RETRY = retry(
     wait=wait_random_exponential(multiplier=0.1, min=0.1, max=2, exp_base=1.5),
     retry=retry_if_result(is_over_query_limit),
-    stop=stop_after_delay(10),
 )
 
 MATRIX_RETRY = retry(
     wait=wait_random_exponential(multiplier=0.1, min=0.1, max=2, exp_base=1.5),
     retry=retry_if_result(is_over_query_limit),
-    stop=stop_after_delay(10),
 )
 
 
