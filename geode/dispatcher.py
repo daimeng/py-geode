@@ -4,7 +4,6 @@ import os
 import numpy as np
 import pandas as pd
 import ujson
-import threading
 from concurrent.futures import ThreadPoolExecutor
 from scipy import spatial
 from typing import Dict, Any
@@ -260,11 +259,10 @@ class Dispatcher:
     exc = None
 
     def __init__(self, config=None):
-        self.exc = ThreadPoolExecutor(max_workers=1)
         self.dispatcher = self.run(AsyncDispatcher.init(config))
 
     def run(self, coro):
-        future = self.exc.submit(asyncio.run, coro)
+        future = ThreadPoolExecutor().submit(asyncio.run, coro)
         return future.result()
 
     # TODO: find way to consolidate these wrappers
@@ -303,6 +301,3 @@ class Dispatcher:
         return self.run(
             self.geocode_with_session(address, provider=provider)
         )
-
-    def __del__(self):
-        self.exc.shutdown()
