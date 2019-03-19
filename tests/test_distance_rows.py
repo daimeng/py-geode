@@ -50,7 +50,6 @@ async def test_full(mock_server, test_client_config):
             sem=BoundedSemaphore(20)
         )
 
-    assert len(res) == 9
     assert res.isnull().sum().sum() == 0
 
     # origin-major order
@@ -83,7 +82,7 @@ async def test_odd(mock_server, test_client_config):
             # TODO: use default sem for async calls also
             sem=BoundedSemaphore(20)
         )
-    assert len(res) == 5
+
     assert res.isnull().sum().sum() == 0
 
     np.testing.assert_array_almost_equal(
@@ -102,7 +101,12 @@ async def test_thin(mock_server, test_client_config):
     mock_server.reset()
     client = await AsyncDispatcher.init(test_client_config)
 
-    idx = create_dist_index(ORIGS, DESTS[[1], :])
+    # take only last 2 destinations, 3 x 2 query
+    idx = create_dist_index(ORIGS, DESTS[[1, 2], :])
+    expected = [
+        1, 4, 7,    # destination-major order, dest1
+        2, 5, 8     # dest2
+    ]
 
     async with aiohttp.ClientSession() as session:
         res = await client.distance_rows(
@@ -112,17 +116,17 @@ async def test_thin(mock_server, test_client_config):
             # TODO: use default sem for async calls also
             sem=BoundedSemaphore(20)
         )
-    assert len(res) == 3
+
     assert res.isnull().sum().sum() == 0
 
     np.testing.assert_array_almost_equal(
         res.index.values.tolist(),
-        FULL_INDEX[[1, 4, 7], :]
+        FULL_INDEX[expected, :]
     )
 
     np.testing.assert_array_almost_equal(
         res.meters.values,
-        FULL_RESULTS[[1, 4, 7]]
+        FULL_RESULTS[expected]
     )
 
 
@@ -149,7 +153,7 @@ async def test_jumbled(mock_server, test_client_config):
             # TODO: use default sem for async calls also
             sem=BoundedSemaphore(20)
         )
-    assert len(res) == 8
+
     assert res.isnull().sum().sum() == 0
 
     np.testing.assert_array_almost_equal(
