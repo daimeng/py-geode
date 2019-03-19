@@ -207,17 +207,9 @@ ORIGS = np.array([[31.782000, -83.508600], [32.766200, -83.763700],
                   [31.529500, -88.531600]])
 
 
-def test_main(mock_server):
+def test_main(mock_server, test_client_config):
     mock_server.reset()
-    client = Dispatcher({
-        'providers': {
-            'google': {
-                'type_': 'google',
-                'key': 'test123',
-                'base_url': 'http://localhost:8080/'
-            }
-        }
-    })
+    client = Dispatcher(test_client_config)
 
     res = client.distance_matrix(
         origins=ORIGS,

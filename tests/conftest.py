@@ -30,3 +30,16 @@ def mock_server():
     s = MockServer()
     yield s
     s.server.kill()
+
+
+@pytest.fixture
+def test_client_config():
+    return {
+        'providers': {
+            'google': {
+                'type_': 'google',
+                'key': 'test123',
+                'base_url': 'http://localhost:8080/'
+            }
+        }
+    }

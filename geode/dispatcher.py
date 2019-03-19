@@ -127,16 +127,15 @@ class AsyncDispatcher:
         res_df = await self.distance_rows(missing, sem, session=session, provider=provider)
 
         if self.cache:
+            await self.cache.set_distances(
+                origins, destinations, res_df, provider=provider
+            )
+
             merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
         else:
             merged_df = pd.concat([estimate_df, res_df], sort=False)
 
         merged_df = merged_df[~merged_df.index.duplicated(keep='last')].reindex(index=idx.index, copy=False)
-
-        if self.cache:
-            await self.cache.set_distances(
-                origins, destinations, res_df, provider=provider
-            )
 
         if return_inverse:
             return merged_df, oinv.reshape(oinv.size, -1) * np.size(destinations, 0) + dinv
@@ -152,7 +151,8 @@ class AsyncDispatcher:
     async def distance_rows(self, missing, sem, session=None, provider=None):
         odim = [0, 1]
         ddim = [2, 3]
-        if missing.groupby(level=odim).ngroups < missing.groupby(level=ddim).ngroups:
+        if missing.groupby(level=odim).ngroups <= missing.groupby(level=ddim).ngroups:
+            idx = missing.groupby(level=odim, sort=False)
             res = await asyncio.gather(*[
                 self.throttled_distance_matrix(
                     origins=[o],
@@ -160,9 +160,10 @@ class AsyncDispatcher:
                     sem=sem,
                     session=session,
                     provider=provider
-                ) for o, ds in missing.groupby(level=odim)
+                ) for o, ds in idx
             ])
         else:
+            idx = missing.groupby(level=ddim, sort=False)
             res = await asyncio.gather(*[
                 self.throttled_distance_matrix(
                     origins=ds.index.to_frame(index=False).values[:, odim],
@@ -170,16 +171,17 @@ class AsyncDispatcher:
                     sem=sem,
                     session=session,
                     provider=provider
-                ) for o, ds in missing.groupby(level=ddim)
+                ) for o, ds in idx
             ])
-
 
         res_df = None
         res_flat = [row.distances.ravel() for row in res if len(row.distances)]
         if res_flat:
             res_df = pd.DataFrame.from_records(
                 np.concatenate(res_flat),
-                index=missing.index)
+                # make new index by flat iterate through the groupby index
+                index=pd.MultiIndex.from_tuples((d for _, ds in idx for d in ds.index), names=missing.index.names)
+            )
             res_df['source'] = 'google'
 
         return res_df
@@ -236,15 +238,15 @@ class AsyncDispatcher:
         res_df = await self.distance_rows(missing, sem, session=session, provider=provider)
 
         if self.cache:
+            await self.cache.set_distances(
+                origins, destinations, res_df, provider=provider
+            )
+
             merged_df = pd.concat([estimate_df, cache_df, res_df], sort=False)
         else:
             merged_df = pd.concat([estimate_df, res_df], sort=False)
 
         merged_df = merged_df[~merged_df.index.duplicated(keep='last')].sort_index()
-
-        if self.cache:
-            await self.cache.set_distances(
-                origins, destinations, res_df, provider=provider)
 
         return merged_df
 
