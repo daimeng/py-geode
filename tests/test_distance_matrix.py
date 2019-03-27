@@ -22,22 +22,24 @@ def test_main(mock_server, test_client_config):
 
     assert res.isnull().sum().sum() == 0
 
-    # np.unique will end up sorting index
     pd.testing.assert_index_equal(
         res.index,
         pd.MultiIndex.from_tuples([
+            # > 500km threshold or < 100m
             (37.1, -88.1, 37.1, -88.1),
-            (37.1, -88.1, 37.1, -86.1),
-            (37.1, -88.1, 41.9, -97.2),
             (37.1, -88.1, 45.5, -97.5),
+            (37.1, -88.1, 41.9, -97.2),
 
-            (37.2, -88.2, 37.1, -88.1),
-            (37.2, -88.2, 37.1, -86.1),
-            (37.2, -88.2, 41.9, -97.2),
             (37.2, -88.2, 45.5, -97.5),
+            (37.2, -88.2, 41.9, -97.2),
 
             (42.5, -97.5, 37.1, -88.1),
             (42.5, -97.5, 37.1, -86.1),
+
+            # < 500km
+            (37.1, -88.1, 37.1, -86.1),
+            (37.2, -88.2, 37.1, -88.1),
+            (37.2, -88.2, 37.1, -86.1),
             (42.5, -97.5, 41.9, -97.2),
             (42.5, -97.5, 45.5, -97.5),
         ], names=['olat', 'olon', 'dlat', 'dlon'])
@@ -47,17 +49,18 @@ def test_main(mock_server, test_client_config):
     # should be able to eyeball if they look reasonable.
     expected_meters = [
         0.,
-        444779.,
-        1143293.274236,
         1400881.808377,
+        1143293.274236,
 
-        44477.,
-        489257.,
-        1128289.345949,
         1385191.366365,
+        1128289.345949,
 
         1204670.037841,
         1401763.032474,
+
+        444779.,
+        44477.,
+        489257.,
         200150.,
         667169.
     ]
@@ -70,7 +73,7 @@ def test_main(mock_server, test_client_config):
     # restore index with inverse key
     # should be origin-major traversal
     pd.testing.assert_index_equal(
-        res.take(inv.flat).index,
+        res.reindex(inv).index,
         pd.MultiIndex.from_tuples([
             (37.1, -88.1, 37.1, -88.1),
             (37.1, -88.1, 45.5, -97.5),

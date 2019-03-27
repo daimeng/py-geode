@@ -25,6 +25,8 @@ MIN_METERS = 100
 MAX_REQUESTS = 20
 
 
+VEC_DIST = np.vectorize(spatial.distance.euclidean)
+
 class AsyncDispatcher:
     """
     Dispatcher for generic requests.
@@ -88,10 +90,12 @@ class AsyncDispatcher:
         sem = sem or asyncio.BoundedSemaphore(MAX_REQUESTS)
 
         # prepare parameters and indices
-        origins, oinv = np.unique(origins.round(4), axis=0, return_inverse=True)
-        destinations, dinv = np.unique(destinations.round(4), axis=0, return_inverse=True)
+        origins = origins.round(4)
+        destinations = destinations.round(4)
 
-        idx = create_dist_index(origins, destinations)
+        raw_idx = create_dist_index(origins, destinations)
+
+        idx = raw_idx.drop_duplicates()
 
         # kick off cache request
         if self.cache:
@@ -136,10 +140,10 @@ class AsyncDispatcher:
         else:
             merged_df = pd.concat([estimate_df, res_df], sort=False)
 
-        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].reindex(index=idx.index, copy=False)
+        merged_df = merged_df[~merged_df.index.duplicated(keep='last')]
 
         if return_inverse:
-            return merged_df, oinv.reshape(oinv.size, -1) * np.size(destinations, 0) + dinv
+            return merged_df, raw_idx.index
 
         return merged_df
 
@@ -205,7 +209,7 @@ class AsyncDispatcher:
 
         return res
 
-    async def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, sem=None, session=None, provider=None):
+    async def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, sem=None, session=None, provider=None, return_inverse=False):
         sem = sem or asyncio.BoundedSemaphore(MAX_REQUESTS)
 
         origins = origins.round(4)
@@ -220,12 +224,14 @@ class AsyncDispatcher:
                 )
             )
 
-        estimates = spatial.distance.cdist(
-            np.radians(origins),
-            np.radians(destinations)
-        ) * dist_metrics.R_EARTH
+        estimates = np.sqrt(np.square(
+            VEC_DIST(
+                np.radians(origins),
+                np.radians(destinations)
+            )
+        ).sum(axis=1)) * dist_metrics.R_EARTH
 
-        estimate_df = pd.DataFrame(estimates.diagonal().ravel(), columns=['meters'], index=idx.index)
+        estimate_df = pd.DataFrame(estimates, columns=['meters'], index=idx.index)
         estimate_df['seconds'] = estimate_df.meters / 30
         estimate_df['source'] = 'gc_manhattan'
 
@@ -254,7 +260,10 @@ class AsyncDispatcher:
         else:
             merged_df = pd.concat([estimate_df, res_df], sort=False)
 
-        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].sort_index()
+        merged_df = merged_df[~merged_df.index.duplicated(keep='last')]
+
+        if return_inverse:
+            return merged_df, idx.index
 
         return merged_df
 
@@ -269,9 +278,12 @@ class Dispatcher:
     def __init__(self, config=None):
         self.dispatcher = self.run(AsyncDispatcher.init(config))
 
-    def run(self, coro):
-        future = ThreadPoolExecutor().submit(asyncio.run, coro)
-        return future.result()
+    def run(self, coro, threaded=False):
+        if threaded:
+            future = ThreadPoolExecutor().submit(asyncio.run, coro)
+            return future.result()
+        else:
+            return asyncio.run(coro)
 
     # TODO: find way to consolidate these wrappers
     async def distance_matrix_with_session(self, *args, **kwargs):
@@ -295,9 +307,9 @@ class Dispatcher:
             self.distance_matrix_with_session(origins, destinations, max_meters, provider=provider, return_inverse=return_inverse)
         )
 
-    def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, provider=None):
+    def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, provider=None, return_inverse=False):
         return self.run(
-            self.distance_pairs_with_session(origins, destinations, max_meters, provider=provider)
+            self.distance_pairs_with_session(origins, destinations, max_meters, provider=provider, return_inverse=return_inverse)
         )
 
     def batch_geocode(self, addresses, provider=None):
