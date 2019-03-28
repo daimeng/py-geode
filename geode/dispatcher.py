@@ -137,7 +137,7 @@ class AsyncDispatcher:
         else:
             merged_df = pd.concat([estimate_df, res_df], sort=False)
 
-        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].reindex(idx.index, copy=False)
+        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].reindex(index=idx.index, copy=False)
 
         if return_inverse:
             return merged_df, oinv.reshape(oinv.size, -1) * np.size(destinations, 0) + dinv
@@ -262,7 +262,7 @@ class AsyncDispatcher:
         else:
             merged_df = pd.concat([estimate_df, res_df], sort=False)
 
-        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].reindex(idx.index, copy=False)
+        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].reindex(index=idx.index, copy=False)
 
         if return_inverse:
             return merged_df, inv
