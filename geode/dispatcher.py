@@ -277,11 +277,12 @@ class Dispatcher:
     providers: Dict[str, Any] = {}
     dispatcher = None
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, threaded=True):
+        self.threaded = threaded
         self.dispatcher = self.run(AsyncDispatcher.init(config))
 
-    def run(self, coro, threaded=False):
-        if threaded:
+    def run(self, coro):
+        if self.threaded:
             future = ThreadPoolExecutor().submit(asyncio.run, coro)
             return future.result()
         else:
