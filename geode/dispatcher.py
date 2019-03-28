@@ -24,7 +24,6 @@ MAX_METERS = 500000
 MIN_METERS = 100
 MAX_REQUESTS = 20
 
-
 VEC_DIST = np.vectorize(spatial.distance.euclidean)
 
 class AsyncDispatcher:
@@ -90,12 +89,10 @@ class AsyncDispatcher:
         sem = sem or asyncio.BoundedSemaphore(MAX_REQUESTS)
 
         # prepare parameters and indices
-        origins = origins.round(4)
-        destinations = destinations.round(4)
+        origins, oinv = np.unique(origins.round(4), axis=0, return_inverse=True)
+        destinations, dinv = np.unique(destinations.round(4), axis=0, return_inverse=True)
 
-        raw_idx = create_dist_index(origins, destinations)
-
-        idx = raw_idx.drop_duplicates()
+        idx = create_dist_index(origins, destinations)
 
         # kick off cache request
         if self.cache:
@@ -140,10 +137,10 @@ class AsyncDispatcher:
         else:
             merged_df = pd.concat([estimate_df, res_df], sort=False)
 
-        merged_df = merged_df[~merged_df.index.duplicated(keep='last')]
+        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].reindex(idx.index, copy=False)
 
         if return_inverse:
-            return merged_df, raw_idx.index
+            return merged_df, oinv.reshape(oinv.size, -1) * np.size(destinations, 0) + dinv
 
         return merged_df
 
@@ -214,8 +211,11 @@ class AsyncDispatcher:
 
         origins = origins.round(4)
         destinations = destinations.round(4)
+        locs, inv = np.unique(np.hstack((origins, destinations)), axis=0, return_inverse=True)
+        origins = locs[:, 0:2]
+        destinations = locs[:, 2:4]
 
-        idx = pd.DataFrame(np.hstack((origins, destinations)), columns=KEY_COLS).set_index(KEY_COLS)
+        idx = pd.DataFrame(locs, columns=KEY_COLS).set_index(KEY_COLS)
 
         if self.cache:
             cache_future = asyncio.ensure_future(
@@ -224,6 +224,8 @@ class AsyncDispatcher:
                 )
             )
 
+        # no vectorized param version of distance functions
+        # this replaces cdist euclidean
         estimates = np.sqrt(np.square(
             VEC_DIST(
                 np.radians(origins),
@@ -260,10 +262,10 @@ class AsyncDispatcher:
         else:
             merged_df = pd.concat([estimate_df, res_df], sort=False)
 
-        merged_df = merged_df[~merged_df.index.duplicated(keep='last')]
+        merged_df = merged_df[~merged_df.index.duplicated(keep='last')].reindex(idx.index, copy=False)
 
         if return_inverse:
-            return merged_df, idx.index
+            return merged_df, inv
 
         return merged_df
 
