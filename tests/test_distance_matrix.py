@@ -9,8 +9,8 @@ def test_main(mock_server, test_client_config):
     client = Dispatcher(test_client_config)
 
     res, inv = client.distance_matrix(
-        origins=np.array([[37.1, -88.1],
-                          [37.2, -88.2],
+        origins=np.array([[37.2, -88.2],
+                          [37.1, -88.1],
                           [42.5, -97.5]]),
         destinations=np.array([[37.1, -88.1],
                                [45.5, -97.5],
@@ -72,19 +72,77 @@ def test_main(mock_server, test_client_config):
     pd.testing.assert_index_equal(
         res.take(inv.flat).index,
         pd.MultiIndex.from_tuples([
-            (37.1, -88.1, 37.1, -88.1),
-            (37.1, -88.1, 45.5, -97.5),
-            (37.1, -88.1, 37.1, -86.1),
-            (37.1, -88.1, 41.9, -97.2),
-
             (37.2, -88.2, 37.1, -88.1),
             (37.2, -88.2, 45.5, -97.5),
             (37.2, -88.2, 37.1, -86.1),
             (37.2, -88.2, 41.9, -97.2),
 
+            (37.1, -88.1, 37.1, -88.1),
+            (37.1, -88.1, 45.5, -97.5),
+            (37.1, -88.1, 37.1, -86.1),
+            (37.1, -88.1, 41.9, -97.2),
+
             (42.5, -97.5, 37.1, -88.1),
             (42.5, -97.5, 45.5, -97.5),
             (42.5, -97.5, 37.1, -86.1),
             (42.5, -97.5, 41.9, -97.2),
+        ], names=['olat', 'olon', 'dlat', 'dlon'])
+    )
+
+
+def test_pairs(mock_server, test_client_config):
+    mock_server.reset()
+    client = Dispatcher(test_client_config)
+
+    res, inv = client.distance_pairs(
+        origins=np.array([[37.1, -88.1],
+                          [37.2, -88.2],
+                          [42.5, -97.5],
+                          [37.1, -88.1],
+                          [37.1, -88.1]]),
+        destinations=np.array([[37.1, -88.1],
+                               [45.5, -97.5],
+                               [37.1, -86.1],
+                               [41.9, -97.2],
+                               [37.1, -88.1]]),
+        provider='google',
+        return_inverse=True
+    )
+
+    assert res.isnull().sum().sum() == 0
+
+    # np.unique will end up sorting index
+    pd.testing.assert_index_equal(
+        res.index,
+        pd.MultiIndex.from_tuples([
+            (37.1, -88.1, 37.1, -88.1),
+            (37.1, -88.1, 41.9, -97.2),
+            (37.2, -88.2, 45.5, -97.5),
+            (42.5, -97.5, 37.1, -86.1),
+        ], names=['olat', 'olon', 'dlat', 'dlon'])
+    )
+
+    expected_meters = [
+        0.,
+        1143293.274236,
+        1385191.366365,
+        1401763.032474
+    ]
+
+    np.testing.assert_array_almost_equal(
+        res.meters.values,
+        expected_meters
+    )
+
+    # restore index with inverse key
+    # should be origin-major traversal
+    pd.testing.assert_index_equal(
+        res.take(inv.flat).index,
+        pd.MultiIndex.from_tuples([
+            (37.1, -88.1, 37.1, -88.1),
+            (37.2, -88.2, 45.5, -97.5),
+            (42.5, -97.5, 37.1, -86.1),
+            (37.1, -88.1, 41.9, -97.2),
+            (37.1, -88.1, 37.1, -88.1),
         ], names=['olat', 'olon', 'dlat', 'dlon'])
     )
