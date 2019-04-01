@@ -309,7 +309,7 @@ class Dispatcher:
         """
         :param origins: Locations like format [[42.3, -88.7], [40.1, -89.5], ...]
         :param destinations: Locations like format [[42.3, -88.7], [40.1, -89.5], ...]
-        :param max_meters: Max distance in meters to process
+        :param max_meters: Max distance in meters to send to provider
         :param provider: Service to query
         :param return_inverse: Give back list of indices to re-expand duplicate origin distance pairs.
         :return: origins x destinations distances.
