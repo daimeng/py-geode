@@ -5,7 +5,7 @@ from setuptools import find_packages
 
 setup(
     name='geode',
-    version='0.3.17',
+    version='0.3.18',
     description='Geode',
     author='Test',
     author_email='daimengchen@gmail.com',
