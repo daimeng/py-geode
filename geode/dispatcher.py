@@ -305,12 +305,20 @@ class Dispatcher:
         async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
             return await self.dispatcher.geocode(*args, **kwargs, session=session)
 
-    def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None, return_inverse=False):
+    def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None, return_inverse=False) -> pd.DataFrame:
+        """
+        :param origins: Locations like format [[42.3, -88.7], [40.1, -89.5], ...]
+        :param destinations: Locations like format [[42.3, -88.7], [40.1, -89.5], ...]
+        :param max_meters: Max distance in meters to process
+        :param provider: Service to query
+        :param return_inverse: Give back list of indices to re-expand duplicate origin distance pairs.
+        :return: origins x destinations distances.
+        """
         return self.run(
             self.distance_matrix_with_session(origins, destinations, max_meters, provider=provider, return_inverse=return_inverse)
         )
 
-    def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, provider=None, return_inverse=False):
+    def distance_pairs(self, origins, destinations, max_meters=MAX_METERS, provider=None, return_inverse=False) -> pd.DataFrame:
         return self.run(
             self.distance_pairs_with_session(origins, destinations, max_meters, provider=provider, return_inverse=return_inverse)
         )
