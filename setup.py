@@ -5,7 +5,7 @@ from setuptools import find_packages
 
 setup(
     name='geode',
-    version='0.3.18',
+    version='0.3.19',
     description='Geode',
     author='Test',
     author_email='daimengchen@gmail.com',
@@ -16,7 +16,6 @@ setup(
         'pandas',
         'numpy',
         'scipy',
-        'uvloop',
         'ujson',
         'asyncpg',
         'pyyaml',
