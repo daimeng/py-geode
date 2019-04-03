@@ -6,7 +6,6 @@ scipy
 pyyaml
 asyncpg
 ujson
-uvloop
 usaddress
 tenacity
 

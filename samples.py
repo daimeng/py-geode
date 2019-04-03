@@ -2,7 +2,6 @@ import aiohttp
 import time
 import ujson
 import asyncio
-import uvloop
 import prettyprinter
 import numpy as np
 import pandas as pd
@@ -51,5 +50,4 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
     asyncio.run(main())
