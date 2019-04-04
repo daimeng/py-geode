@@ -8,14 +8,15 @@ from concurrent.futures import ThreadPoolExecutor
 from scipy import spatial
 from typing import Dict, Any
 
-from geode import google, dist_metrics
+from geode import google, trimble, dist_metrics
 from geode.config import yaml
 from geode.cache import PostgresCache
 from geode.utils import create_dist_index, grouper, KEY_COLS, first_or_none
 
 TYPE_MAP = {
     'google': google,
-    # 'alk': alk,
+    'trimble': trimble,
+    'pcmiler': trimble,
     # 'bing': bing
 }
 

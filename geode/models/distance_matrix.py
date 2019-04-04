@@ -30,7 +30,7 @@ class Partition(object):
         return partial(self.__call__, instance)
 
     async def __call__(self, instance, origins: np.ndarray, destinations: np.ndarray, *args, area_max: int = None,
-                       factor_max: int = None, **kwargs):
+                       factor_max: int = None, x_max: int = None, y_max: int = None, **kwargs):
         olen = len(origins)
         dlen = len(destinations)
 
@@ -42,8 +42,10 @@ class Partition(object):
 
         area_max = area_max or instance.area_max
         factor_max = factor_max or instance.factor_max
+        x_max = x_max or instance.x_max
+        y_max = y_max or instance.y_max
 
-        chunks = list(partition_matrix(dlen, olen, area_max, factor_max))
+        chunks = list(partition_matrix(dlen, olen, area_max, factor_max, x_max, y_max))
 
         subresults = await asyncio.gather(*[
             self.fn(instance, origins=origins[y:y2 + 1], destinations=destinations[x:x2 + 1], *args, **kwargs)
@@ -74,7 +76,7 @@ class MatrixIterBlock(NamedTuple):
     y2: int
 
 
-def partition_matrix(xlen: int, ylen: int, area_max: int, factor_max: int) -> Iterator[MatrixIterBlock]:
+def partition_matrix(xlen: int, ylen: int, area_max: int = None, factor_max: int = None, x_max: int = None, y_max: int = None) -> Iterator[MatrixIterBlock]:
     """
     :param xlen: x length of matrix
     :param ylen: y length of matrix
@@ -82,8 +84,15 @@ def partition_matrix(xlen: int, ylen: int, area_max: int, factor_max: int) -> It
     :param factor_max: x + y <= factor_max
     :return: Iterator for sub-matrix rectangles, northwest and southeast corners
     """
-    xmax = min(xlen, area_max, factor_max - 1)
-    ymax = min(ylen, area_max // xmax, factor_max - xmax)
+    if x_max is None:
+        xmax = min(xlen, area_max, factor_max - 1)
+    else:
+        xmax = x_max
+
+    if y_max is None:
+        ymax = min(ylen, area_max // xmax, factor_max - xmax)
+    else:
+        ymax = y_max
 
     for y in range(0, ylen, ymax):
         for x in range(0, xlen, xmax):
@@ -92,13 +101,13 @@ def partition_matrix(xlen: int, ylen: int, area_max: int, factor_max: int) -> It
 
             # if partition exceed x bounds
             if x2 > xlen:
-                for b in partition_matrix(xlen - x, ylen, area_max, factor_max):
+                for b in partition_matrix(xlen - x, ylen, area_max, factor_max, x_max, y_max):
                     yield MatrixIterBlock(x + b.x, y + b.y, x + b.x2, y + b.y2)
                 xlen = x
 
             # if partition exceed y bounds
             elif y2 > ylen:
-                for b in partition_matrix(xlen, ylen - y, area_max, factor_max):
+                for b in partition_matrix(xlen, ylen - y, area_max, factor_max, x_max, y_max):
                     yield MatrixIterBlock(x + b.x, y + b.y, x + b.x2, y + b.y2)
                 ylen = y
 
