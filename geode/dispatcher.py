@@ -24,6 +24,8 @@ MAX_METERS = 500000
 MIN_METERS = 100
 MAX_REQUESTS = 20
 
+CLIENT_TIMEOUT = 20
+
 VEC_DIST = np.vectorize(spatial.distance.euclidean)
 
 class AsyncDispatcher:
@@ -290,19 +292,19 @@ class Dispatcher:
 
     # TODO: find way to consolidate these wrappers
     async def distance_matrix_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps, timeout=aiohttp.ClientTimeout(total=CLIENT_TIMEOUT)) as session:
             return await self.dispatcher.distance_matrix(*args, **kwargs, session=session)
 
     async def distance_pairs_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps, timeout=aiohttp.ClientTimeout(total=CLIENT_TIMEOUT)) as session:
             return await self.dispatcher.distance_pairs(*args, **kwargs, session=session)
 
     async def batch_geocode_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps, timeout=aiohttp.ClientTimeout(total=CLIENT_TIMEOUT)) as session:
             return await self.dispatcher.batch_geocode(*args, **kwargs, session=session)
 
     async def geocode_with_session(self, *args, **kwargs):
-        async with aiohttp.ClientSession(json_serialize=ujson.dumps) as session:
+        async with aiohttp.ClientSession(json_serialize=ujson.dumps, timeout=aiohttp.ClientTimeout(total=CLIENT_TIMEOUT)) as session:
             return await self.dispatcher.geocode(*args, **kwargs, session=session)
 
     def distance_matrix(self, origins, destinations, max_meters=MAX_METERS, provider=None, return_inverse=False) -> pd.DataFrame:
